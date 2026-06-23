@@ -329,6 +329,69 @@ a{color:inherit;}
 .alert-callout h3{color:var(--alert-dark);margin-bottom:6px;}
 .alert-callout p{color:var(--ink);margin:0;}
 
+/* ---------- Minha Rotina ---------- */
+.routine-manager{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);margin-bottom:26px;
+}
+.routine-tabs{
+  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;
+}
+.routine-tab{
+  background:var(--bg-soft);border:1px solid var(--line);color:var(--ink-soft);
+  border-radius:999px;padding:9px 14px;font-size:.88rem;font-weight:700;
+}
+.routine-tab--active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.routine-form-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;
+}
+.routine-form-head h2{font-size:1.18rem;margin-bottom:2px;}
+.routine-form-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+}
+.routine-field{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.82rem;color:var(--ink-soft);}
+.routine-field--wide{grid-column:1/-1;}
+.routine-field input,.routine-field select,.routine-field textarea{
+  width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:#fff;color:var(--ink);font:inherit;font-weight:400;padding:10px 12px;
+}
+.routine-field textarea{min-height:92px;resize:vertical;}
+.routine-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.routine-btn{
+  border:none;border-radius:999px;padding:10px 16px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.routine-btn--primary{background:var(--primary);color:#fff;}
+.routine-btn--secondary{background:var(--bg-soft);color:var(--ink);}
+.routine-list{display:grid;gap:12px;}
+.routine-empty{
+  border:1.5px dashed var(--line);border-radius:var(--radius);
+  padding:22px;text-align:center;color:var(--ink-faint);background:rgba(255,255,255,.48);
+}
+.routine-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.routine-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.routine-card-title{font-family:var(--font-display);font-weight:600;font-size:1.08rem;margin:0 0 6px;}
+.routine-status{
+  display:inline-flex;border-radius:999px;padding:4px 10px;
+  font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;
+}
+.routine-status--active{background:var(--primary-soft);color:var(--primary-dark);}
+.routine-status--inactive{background:var(--bg-soft);color:var(--ink-faint);}
+.routine-card-actions{display:flex;gap:6px;flex:0 0 auto;}
+.routine-icon-btn{
+  width:36px;height:36px;border:none;border-radius:999px;background:var(--bg-soft);color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;font-weight:700;
+}
+.routine-icon-btn--danger{background:var(--alert-soft);color:var(--alert-dark);}
+.routine-card-details{
+  display:grid;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  color:var(--ink-soft);font-size:.92rem;
+}
+.routine-card-details strong{color:var(--ink);}
+
 /* ---------- Guia Nordestino ---------- */
 .region-section{margin-bottom:30px;}
 .region-section h3{font-size:1.08rem;margin-bottom:12px;}
@@ -391,6 +454,8 @@ a{color:inherit;}
   .timeline-node--current::after{left:-64px;width:54px;}
   .fab{right:calc(16px + env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));padding:12px 16px;font-size:.85rem;}
   .view-title{font-size:1.5rem;}
+  .routine-form-grid{grid-template-columns:1fr;}
+  .routine-card-top{align-items:flex-start;}
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -413,7 +478,7 @@ a{color:inherit;}
       </span>
     </div>
     <div class="sidebar-divider"></div>
-    <ul class="nav-list"><li><button class="nav-item nav-item--active" type="button" data-target="hoje"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Hoje</span></button></li><li><button class="nav-item" type="button" data-target="receitas"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4v16M6 4c0 3-2 3-2 6s2 3 2 3M10 4v6a2 2 0 1 0 4 0V4M12 10v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Receitas</span></button></li><li><button class="nav-item" type="button" data-target="chas"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10h14v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 11h1.5a2 2 0 1 1 0 4H18" stroke="currentColor" stroke-width="1.6"/><path d="M8 4c0 1-1.2 1.2-1.2 2.4S8 7.8 8 8.8M12 4c0 1-1.2 1.2-1.2 2.4S12 7.8 12 8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Chás</span></button></li><li><button class="nav-item" type="button" data-target="suplementos"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="9" width="17" height="7" rx="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 9v7" stroke="currentColor" stroke-width="1.6"/></svg><span>Suplementos</span></button></li><li><button class="nav-item" type="button" data-target="regras"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Regras de Ouro</span></button></li><li><button class="nav-item" type="button" data-target="guia"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg><span>Guia Nordestino</span></button></li></ul>
+    <ul class="nav-list"><li><button class="nav-item nav-item--active" type="button" data-target="hoje"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Hoje</span></button></li><li><button class="nav-item" type="button" data-target="receitas"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4v16M6 4c0 3-2 3-2 6s2 3 2 3M10 4v6a2 2 0 1 0 4 0V4M12 10v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Receitas</span></button></li><li><button class="nav-item" type="button" data-target="chas"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10h14v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 11h1.5a2 2 0 1 1 0 4H18" stroke="currentColor" stroke-width="1.6"/><path d="M8 4c0 1-1.2 1.2-1.2 2.4S8 7.8 8 8.8M12 4c0 1-1.2 1.2-1.2 2.4S12 7.8 12 8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Chás</span></button></li><li><button class="nav-item" type="button" data-target="suplementos"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="9" width="17" height="7" rx="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 9v7" stroke="currentColor" stroke-width="1.6"/></svg><span>Suplementos</span></button></li><li><button class="nav-item" type="button" data-target="minha-rotina"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10M7 8h10M5 12h14M7 16h10M9 20h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Minha Rotina</span></button></li><li><button class="nav-item" type="button" data-target="regras"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Regras de Ouro</span></button></li><li><button class="nav-item" type="button" data-target="guia"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg><span>Guia Nordestino</span></button></li></ul>
     <div class="sidebar-foot">Sem glúten · sem lactose · sem enlatados<br>Feito para o seu dia a dia.</div>
   </aside>
 
@@ -479,6 +544,20 @@ a{color:inherit;}
           <p class="view-desc">Consulte seu médico para organizar estes aliados na sua rotina.</p>
         </div>
         <div class="info-grid"><article class="info-card" id="sup-espinheira" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Espinheira-Santa</span><span class="info-card-time">Em jejum, ao acordar</span></div><p class="info-card-line"><strong>Forma:</strong> Extrato seco ou tintura</p><p class="info-card-line"><strong>Efeito:</strong> Protetor gástrico natural — ajuda a cicatrizar a mucosa e reduzir a queimação.</p></article><article class="info-card" id="sup-enzimas" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Enzimas digestivas</span><span class="info-card-time">No início do almoço e do jantar</span></div><p class="info-card-line"><strong>Forma:</strong> Cápsula com protease, amilase, lipase e lactase</p><p class="info-card-line"><strong>Efeito:</strong> Quebram os alimentos e ajudam a eliminar o estufamento e os gases.</p></article><article class="info-card" id="sup-glutamina" data-accent="supp"><div class="info-card-head"><span class="info-card-title">L-Glutamina</span><span class="info-card-time">Em jejum, junto com o chá de Espinheira-Santa</span></div><p class="info-card-line"><strong>Forma:</strong> 5 g diluída em água ou no chá</p><p class="info-card-line"><strong>Efeito:</strong> Aminoácido que repara as paredes do estômago e do intestino.</p></article><article class="info-card" id="sup-magnesio" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Magnésio Inositol</span><span class="info-card-time">À noite, junto com a ceia</span></div><p class="info-card-line"><strong>Forma:</strong> Dose diluída em água</p><p class="info-card-line"><strong>Efeito:</strong> O magnésio relaxa as dores musculares da fibromialgia; o inositol acalma a mente hiperativa (TDAH/TEA) para um sono reparador.</p></article></div>
+      </section>
+
+      <section class="view" id="view-minha-rotina">
+        <div class="view-header">
+          <span class="view-eyebrow">Personalização</span>
+          <h1 class="view-title">Minha Rotina</h1>
+          <p class="view-desc">Cadastre medicações, suplementos, patologias e tratamentos para adaptar o Alívio Diário ao seu cuidado real.</p>
+        </div>
+        <div class="routine-manager" aria-label="Gerenciador da minha rotina">
+          <div class="routine-tabs" id="routine-tabs" role="tablist"></div>
+          <form id="routine-form" autocomplete="off"></form>
+        </div>
+        <div class="subsection-title" id="routine-list-title">Itens cadastrados</div>
+        <div class="routine-list" id="routine-list"></div>
       </section>
 
       <section class="view" id="view-regras">
@@ -661,6 +740,235 @@ a{color:inherit;}
     updateProgress();
   }
 
+  /* ---------------- Minha Rotina CRUD ---------------- */
+  var MY_ROUTINE_KEY = 'aliviodiario:minhaRotina:v1';
+  var routineActiveType = 'medicacoes';
+
+  var ROUTINE_TYPES = {
+    medicacoes: {
+      label: 'Medicações',
+      singular: 'medicação',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['dosagem', 'horario', 'frequencia', 'ingestao', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'dosagem', label:'Dosagem', type:'text'},
+        {name:'horario', label:'Horário indicado pelo médico', type:'time'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'ingestao', label:'Como tomar', type:'select', options:[['jejum','Em jejum'],['com_alimento','Com alimento'],['indiferente','Indiferente']]},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    },
+    suplementos: {
+      label: 'Suplementos',
+      singular: 'suplemento',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['dosagem', 'horario', 'frequencia', 'objetivo', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'dosagem', label:'Dosagem', type:'text'},
+        {name:'horario', label:'Horário sugerido', type:'time'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'objetivo', label:'Objetivo', type:'text'},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    },
+    patologias: {
+      label: 'Patologias/condições',
+      singular: 'condição',
+      statusActive: 'ativa',
+      statusInactive: 'inativa',
+      details: ['sintomas', 'cuidados', 'restricoes', 'observacoesMedicas'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'sintomas', label:'Sintomas principais', type:'textarea'},
+        {name:'cuidados', label:'Cuidados importantes', type:'textarea'},
+        {name:'restricoes', label:'Restrições', type:'textarea'},
+        {name:'observacoesMedicas', label:'Observações médicas', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativa','Ativa'],['inativa','Inativa']]}
+      ]
+    },
+    tratamentos: {
+      label: 'Tratamentos',
+      singular: 'tratamento',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['tipo', 'frequencia', 'periodo', 'profissional', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'tipo', label:'Tipo', type:'text'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'periodo', label:'Horário ou período preferencial', type:'text'},
+        {name:'profissional', label:'Profissional responsável', type:'text'},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    }
+  };
+
+  function emptyRoutineData(){
+    return {medicacoes:[], suplementos:[], patologias:[], tratamentos:[]};
+  }
+
+  function loadRoutineData(){
+    try{
+      return Object.assign(emptyRoutineData(), JSON.parse(localStorage.getItem(MY_ROUTINE_KEY)) || {});
+    }catch(e){
+      return emptyRoutineData();
+    }
+  }
+
+  function saveRoutineData(data){
+    try{ localStorage.setItem(MY_ROUTINE_KEY, JSON.stringify(Object.assign(emptyRoutineData(), data))); }catch(e){}
+  }
+
+  function escapeHtml(value){
+    return String(value || '').replace(/[&<>"']/g, function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch];
+    });
+  }
+
+  function getFieldConfig(config, name){
+    return config.fields.find(function(field){ return field.name === name; });
+  }
+
+  function optionText(field, value){
+    if(!field || !field.options) return value || '';
+    var found = field.options.find(function(opt){ return opt[0] === value; });
+    return found ? found[1] : value;
+  }
+
+  function renderRoutineInput(field, value){
+    var safeValue = escapeHtml(value || '');
+    if(field.type === 'textarea'){
+      return '<textarea id="routine-' + field.name + '" name="' + field.name + '" rows="3" ' + (field.required ? 'required' : '') + '>' + safeValue + '</textarea>';
+    }
+    if(field.type === 'select'){
+      return '<select id="routine-' + field.name + '" name="' + field.name + '" ' + (field.required ? 'required' : '') + '>' +
+        (field.options || []).map(function(opt){
+          return '<option value="' + escapeHtml(opt[0]) + '" ' + (opt[0] === value ? 'selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+        }).join('') + '</select>';
+    }
+    return '<input id="routine-' + field.name + '" name="' + field.name + '" type="' + (field.type || 'text') + '" value="' + safeValue + '" ' + (field.required ? 'required' : '') + '>';
+  }
+
+  function renderRoutineTabs(){
+    var tabs = document.getElementById('routine-tabs');
+    if(!tabs) return;
+    tabs.innerHTML = Object.keys(ROUTINE_TYPES).map(function(type){
+      var config = ROUTINE_TYPES[type];
+      return '<button class="routine-tab ' + (type === routineActiveType ? 'routine-tab--active' : '') + '" type="button" role="tab" aria-selected="' + (type === routineActiveType ? 'true' : 'false') + '" data-routine-type="' + type + '">' + config.label + '</button>';
+    }).join('');
+  }
+
+  function renderRoutineForm(item){
+    var form = document.getElementById('routine-form');
+    if(!form) return;
+    var config = ROUTINE_TYPES[routineActiveType];
+    var editing = !!item;
+    form.dataset.editingId = editing ? item.id : '';
+    form.innerHTML =
+      '<div class="routine-form-head"><div><span class="view-eyebrow">' + (editing ? 'Editar cadastro' : 'Novo cadastro') + '</span><h2>' + (editing ? 'Atualizar ' : 'Adicionar ') + config.singular + '</h2></div></div>' +
+      '<div class="routine-form-grid">' +
+      config.fields.map(function(field){
+        return '<label class="routine-field ' + (field.type === 'textarea' ? 'routine-field--wide' : '') + '" for="routine-' + field.name + '"><span>' + field.label + (field.required ? ' *' : '') + '</span>' + renderRoutineInput(field, editing ? item[field.name] : '') + '</label>';
+      }).join('') +
+      '</div><div class="routine-actions"><button class="routine-btn routine-btn--primary" type="submit">' + (editing ? 'Salvar alterações' : 'Cadastrar') + '</button>' +
+      (editing ? '<button class="routine-btn routine-btn--secondary" type="button" data-cancel-routine-edit>Cancelar edição</button>' : '') +
+      '</div>';
+  }
+
+  function itemFromRoutineForm(form, config){
+    var id = form.dataset.editingId || String(Date.now());
+    var item = {id:id};
+    config.fields.forEach(function(field){
+      item[field.name] = form.elements[field.name] ? form.elements[field.name].value.trim() : '';
+    });
+    if(!item.status) item.status = config.statusActive;
+    return item;
+  }
+
+  function renderRoutineList(){
+    var list = document.getElementById('routine-list');
+    var title = document.getElementById('routine-list-title');
+    if(!list || !title) return;
+    var data = loadRoutineData();
+    var config = ROUTINE_TYPES[routineActiveType];
+    var items = data[routineActiveType] || [];
+    title.textContent = config.label + ' cadastrados';
+    if(!items.length){
+      list.innerHTML = '<div class="routine-empty">Nenhum cadastro ainda. Preencha o formulário acima para começar.</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(item){
+      var inactive = item.status === config.statusInactive;
+      var details = config.details.filter(function(name){ return item[name]; }).map(function(name){
+        var field = getFieldConfig(config, name);
+        return '<div><strong>' + escapeHtml(field ? field.label : name) + ':</strong> ' + escapeHtml(optionText(field, item[name])) + '</div>';
+      }).join('');
+      return '<article class="routine-card"><div class="routine-card-top"><div><h3 class="routine-card-title">' + escapeHtml(item.nome || 'Sem nome') + '</h3><span class="routine-status ' + (inactive ? 'routine-status--inactive' : 'routine-status--active') + '">' + escapeHtml(optionText(getFieldConfig(config, 'status'), item.status)) + '</span></div><div class="routine-card-actions"><button class="routine-icon-btn" type="button" data-routine-edit="' + escapeHtml(item.id) + '" aria-label="Editar">✎</button><button class="routine-icon-btn routine-icon-btn--danger" type="button" data-routine-delete="' + escapeHtml(item.id) + '" aria-label="Excluir">×</button></div></div>' + (details ? '<div class="routine-card-details">' + details + '</div>' : '') + '</article>';
+    }).join('');
+  }
+
+  function renderRoutineManager(item){
+    renderRoutineTabs();
+    renderRoutineForm(item || null);
+    renderRoutineList();
+  }
+
+  function initRoutineManager(){
+    var form = document.getElementById('routine-form');
+    var tabs = document.getElementById('routine-tabs');
+    var list = document.getElementById('routine-list');
+    if(!form || !tabs || !list) return;
+    renderRoutineManager();
+    tabs.addEventListener('click', function(e){
+      var tab = e.target.closest && e.target.closest('[data-routine-type]');
+      if(!tab) return;
+      routineActiveType = tab.dataset.routineType;
+      renderRoutineManager();
+    });
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var config = ROUTINE_TYPES[routineActiveType];
+      var data = loadRoutineData();
+      var items = data[routineActiveType] || [];
+      var item = itemFromRoutineForm(form, config);
+      var idx = items.findIndex(function(entry){ return entry.id === item.id; });
+      if(idx >= 0) items[idx] = item;
+      else items.unshift(item);
+      data[routineActiveType] = items;
+      saveRoutineData(data);
+      renderRoutineManager();
+    });
+    form.addEventListener('click', function(e){
+      if(e.target.closest && e.target.closest('[data-cancel-routine-edit]')) renderRoutineManager();
+    });
+    list.addEventListener('click', function(e){
+      var editBtn = e.target.closest && e.target.closest('[data-routine-edit]');
+      var deleteBtn = e.target.closest && e.target.closest('[data-routine-delete]');
+      var data = loadRoutineData();
+      var items = data[routineActiveType] || [];
+      if(editBtn){
+        var item = items.find(function(entry){ return entry.id === editBtn.dataset.routineEdit; });
+        if(item){
+          renderRoutineManager(item);
+          form.scrollIntoView({behavior: prefersReducedMotion() ? 'auto' : 'smooth', block:'start'});
+        }
+      }
+      if(deleteBtn){
+        if(!window.confirm('Excluir este cadastro?')) return;
+        data[routineActiveType] = items.filter(function(entry){ return entry.id !== deleteBtn.dataset.routineDelete; });
+        saveRoutineData(data);
+        renderRoutineManager();
+      }
+    });
+  }
+
   /* ---------------- Current / next timeline highlight ---------------- */
   function timeToMinutes(t){
     var parts = t.split(':');
@@ -760,6 +1068,7 @@ a{color:inherit;}
     updateGreeting();
     updateCurrentNode();
     initChecklist();
+    initRoutineManager();
     setInterval(updateCurrentNode, 60000);
 
     if('serviceWorker' in navigator){
