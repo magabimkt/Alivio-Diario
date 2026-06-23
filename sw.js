@@ -1,7 +1,7 @@
 // Alívio Diário — Service Worker
 // Cache-first shell para uso offline. Atualize CACHE_NAME ao publicar mudanças.
 
-const CACHE_NAME = 'alivio-diario-v2';
+const CACHE_NAME = 'alivio-diario-v5';
 const SHELL_FILES = [
   './index.html',
   './manifest.json',
