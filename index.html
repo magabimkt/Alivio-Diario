@@ -42,6 +42,7 @@
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
+html{overflow-x:hidden;}
 body{
   background:var(--bg);
   color:var(--ink);
@@ -49,6 +50,7 @@ body{
   font-size:16px;
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
 }
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0 0 .4em;color:var(--ink);}
 p{margin:0 0 .8em;}
@@ -195,6 +197,8 @@ a{color:inherit;}
 .timeline-node[data-accent="med"] .timeline-card{--accent:var(--alert);}
 .timeline-node[data-accent="treatment"] .timeline-card{--accent:var(--region);}
 .timeline-node[data-accent="condition"] .timeline-card{--accent:var(--primary);}
+.timeline-node[data-accent="water"] .timeline-card{--accent:var(--tea);}
+.timeline-node[data-accent="breath"] .timeline-card{--accent:var(--alert);}
 .timeline-node[data-accent="morning"]{--accent:var(--morning);}
 .timeline-node[data-accent="midday"]{--accent:var(--midday);}
 .timeline-node[data-accent="night"]{--accent:var(--night);}
@@ -205,6 +209,8 @@ a{color:inherit;}
 .timeline-node[data-accent="med"]{--accent:var(--alert);}
 .timeline-node[data-accent="treatment"]{--accent:var(--region);}
 .timeline-node[data-accent="condition"]{--accent:var(--primary);}
+.timeline-node[data-accent="water"]{--accent:var(--tea);}
+.timeline-node[data-accent="breath"]{--accent:var(--alert);}
 
 .timeline-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
 .timeline-check{
@@ -213,6 +219,22 @@ a{color:inherit;}
 .timeline-title{font-weight:700;font-size:1.02rem;}
 .timeline-desc{color:var(--ink-soft);font-size:.93rem;margin:0 0 10px 30px;}
 .timeline-chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:30px;}
+
+.smart-panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:18px 20px;margin-bottom:28px;box-shadow:var(--shadow);
+}
+.smart-panel[hidden]{display:none;}
+.smart-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;}
+.smart-panel-title{font-family:var(--font-display);font-size:1.18rem;font-weight:600;}
+.smart-panel-sub{color:var(--ink-soft);font-size:.92rem;margin:0;}
+.smart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+.smart-card{
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:12px 14px;
+}
+.smart-card strong{display:block;margin-bottom:4px;color:var(--ink);}
+.smart-card span{display:block;color:var(--ink-soft);font-size:.9rem;}
 
 .timeline-node--current .timeline-card{border-color:var(--accent, var(--primary));box-shadow:var(--shadow-md);}
 .timeline-node--current .timeline-time{color:var(--accent, var(--primary));font-weight:700;}
@@ -446,14 +468,14 @@ a{color:inherit;}
 /* ---------- Responsive ---------- */
 @media (max-width:880px){
   .sidebar{
-    position:fixed;left:0;top:0;height:100vh;transform:translateX(-100%);
+    position:fixed;left:0;top:0;height:100vh;width:min(var(--sidebar-w), calc(100vw - 34px));flex-basis:auto;transform:translateX(-100%);
     transition:transform .25s ease;box-shadow:var(--shadow-md);
   }
   .sidebar--open{transform:translateX(0);}
   .topbar{display:flex;}
   .backdrop{display:none;}
   .backdrop--visible{display:block;}
-  .main{padding:26px 18px calc(70px + env(safe-area-inset-bottom, 0px));max-width:100%;}
+  .main{width:100%;padding:22px 14px calc(78px + env(safe-area-inset-bottom, 0px));max-width:100%;overflow-x:hidden;}
   .timeline{padding-left:64px;}
   .timeline-time{left:-64px;width:54px;font-size:.74rem;}
   .timeline-dot{left:-36px;}
@@ -462,6 +484,25 @@ a{color:inherit;}
   .view-title{font-size:1.5rem;}
   .routine-form-grid{grid-template-columns:1fr;}
   .routine-card-top{align-items:flex-start;}
+  .timeline-card{padding:14px 14px;}
+  .timeline-desc{margin-left:0;font-size:.9rem;}
+  .timeline-chips{margin-left:0;}
+  .link-chip{max-width:100%;white-space:normal;text-align:left;}
+  .smart-panel{padding:16px 14px;}
+}
+
+@media (max-width:420px){
+  .main{padding-left:12px;padding-right:12px;}
+  .timeline{padding-left:50px;}
+  .timeline::before{left:24px;}
+  .timeline-time{left:-50px;width:42px;font-size:.68rem;}
+  .timeline-dot{left:-32px;}
+  .timeline-node--current::after{display:none;}
+  .timeline-head{gap:8px;}
+  .timeline-title{font-size:.96rem;}
+  .routine-tabs{gap:6px;}
+  .routine-tab{font-size:.78rem;padding:8px 10px;}
+  .routine-actions .routine-btn{width:100%;}
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -513,6 +554,15 @@ a{color:inherit;}
           </div>
           <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
         </div>
+        <section class="smart-panel" id="smart-panel" hidden>
+          <div class="smart-panel-head">
+            <div>
+              <div class="smart-panel-title">Orienta??es inteligentes de hoje</div>
+              <p class="smart-panel-sub">Geradas a partir dos perfis, condi??es e rotina cadastrados neste aparelho.</p>
+            </div>
+          </div>
+          <div class="smart-grid" id="smart-grid"></div>
+        </section>
         <ul class="timeline" id="daily-timeline"><li class="timeline-node" data-accent="supp" data-time="06:30" data-key="jejum"><span class="timeline-time">06:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="jejum" id="check-jejum" aria-label="Marcar Jejum — proteger e reparar como concluído"><span class="timeline-title">Jejum — proteger e reparar</span></div><p class="timeline-desc">1 xícara morna de Chá de Espinheira-Santa + 5 g de L-Glutamina diluída. Aguarde 20 minutos antes de comer.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Chá de Espinheira-Santa</button><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-glutamina">L-Glutamina</button></div></div></li><li class="timeline-node" data-accent="morning" data-time="07:00" data-key="cafe"><span class="timeline-time">07:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cafe" id="check-cafe" aria-label="Marcar Café da manhã como concluído"><span class="timeline-title">Café da manhã</span></div><p class="timeline-desc">Ovos mexidos (na manteiga ghee ou azeite) + raiz cozida bem macia (mandioca/macaxeira ou batata-doce) + 1 fatia de melão ou mamão picado.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="morning" data-view="receitas" data-tab="cafe" data-target="rec-cafe-featured">Ver receita do dia</button></div></div></li><li class="timeline-node" data-accent="tea" data-time="10:00" data-key="cha-manha"><span class="timeline-time">10:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cha-manha" id="check-cha-manha" aria-label="Marcar Chá da manhã como concluído"><span class="timeline-title">Chá da manhã</span></div><p class="timeline-desc">1 xícara morna de Chá de Erva-Doce — reduz gases e acalma o estômago.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-ervadoce">Chá de Erva-Doce</button></div></div></li><li class="timeline-node" data-accent="supp" data-time="11:45" data-key="enzimas-almoco"><span class="timeline-time">11:45</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="enzimas-almoco" id="check-enzimas-almoco" aria-label="Marcar Antes do almoço como concluído"><span class="timeline-title">Antes do almoço</span></div><p class="timeline-desc">1 cápsula de Enzimas Digestivas.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-enzimas">Enzimas Digestivas</button></div></div></li><li class="timeline-node" data-accent="midday" data-time="12:00" data-key="almoco"><span class="timeline-time">12:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="almoco" id="check-almoco" aria-label="Marcar Almoço como concluído"><span class="timeline-title">Almoço</span></div><p class="timeline-desc">Arroz branco bem cozido ou purê de batata + filé de frango ou peixe grelhado bem desfiado + chuchu ou cenoura cozidos até ficarem bem moles.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="midday" data-view="receitas" data-tab="almoco" data-target="rec-almoco-1">Ver receita sugerida</button></div></div></li><li class="timeline-node" data-accent="snack" data-time="16:00" data-key="lanche"><span class="timeline-time">16:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="lanche" id="check-lanche" aria-label="Marcar Lanche da tarde como concluído"><span class="timeline-title">Lanche da tarde</span></div><p class="timeline-desc">Macarrão de arroz com frango desfiado OU banana amassada com aveia e mel.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-lanche-macarrao">Opção A: macarrão de arroz</button><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-lanche-banana">Opção B: banana com aveia</button></div></div></li><li class="timeline-node" data-accent="tea" data-time="17:30" data-key="cha-tarde"><span class="timeline-time">17:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cha-tarde" id="check-cha-tarde" aria-label="Marcar Chá do fim de tarde como concluído"><span class="timeline-title">Chá do fim de tarde</span></div><p class="timeline-desc">1 xícara morna de Chá de Espinheira-Santa — prevenção contra a azia noturna.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Chá de Espinheira-Santa</button></div></div></li><li class="timeline-node" data-accent="supp" data-time="18:45" data-key="enzimas-jantar"><span class="timeline-time">18:45</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="enzimas-jantar" id="check-enzimas-jantar" aria-label="Marcar Antes do jantar como concluído"><span class="timeline-title">Antes do jantar</span></div><p class="timeline-desc">1 cápsula de Enzimas Digestivas.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-enzimas">Enzimas Digestivas</button></div></div></li><li class="timeline-node" data-accent="night" data-time="19:00" data-key="jantar"><span class="timeline-time">19:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="jantar" id="check-jantar" aria-label="Marcar Jantar como concluído"><span class="timeline-title">Jantar</span></div><p class="timeline-desc">Sopa cremosa de mandioquinha com abobrinha e frango desfiado, batida no liquidificador para facilitar o esvaziamento gástrico.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="night" data-view="receitas" data-tab="jantar" data-target="rec-jantar-fixo">Ver receita</button></div></div></li><li class="timeline-node" data-accent="snack" data-time="21:00" data-key="ceia"><span class="timeline-time">21:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="ceia" id="check-ceia" aria-label="Marcar Ceia anti-fome como concluído"><span class="timeline-title">Ceia anti-fome</span></div><p class="timeline-desc">30 minutos antes de deitar: Mingau Conforto Noturno + dose de Magnésio Inositol diluído em água.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-ceia-fixa">Mingau Conforto Noturno</button><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-magnesio">Magnésio Inositol</button></div></div></li><li class="timeline-node" data-accent="primary" data-time="21:30" data-key="dormir"><span class="timeline-time">21:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="dormir" id="check-dormir" aria-label="Marcar Na hora de dormir como concluído"><span class="timeline-title">Na hora de dormir</span></div><p class="timeline-desc">Durma virada para o lado esquerdo, com a cabeceira levemente elevada — isso impede mecanicamente a subida do ácido gástrico.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="primary" data-view="regras" data-tab="" data-target="">Ver Regras de Ouro</button></div></div></li></ul>
       </section>
 
@@ -556,7 +606,7 @@ a{color:inherit;}
         <div class="view-header">
           <span class="view-eyebrow">Personalização</span>
           <h1 class="view-title">Minha Rotina</h1>
-          <p class="view-desc">Cadastre medicações, suplementos, patologias e tratamentos para adaptar o Alívio Diário ao seu cuidado real.</p>
+          <p class="view-desc">Cadastre perfis, medicações, suplementos, patologias e tratamentos para adaptar o Alívio Diário ao cuidado real de cada pessoa.</p>
         </div>
         <div class="routine-manager" aria-label="Gerenciador da minha rotina">
           <div class="routine-tabs" id="routine-tabs" role="tablist"></div>
@@ -758,6 +808,22 @@ a{color:inherit;}
   var routineActiveType = 'medicacoes';
 
   var ROUTINE_TYPES = {
+    pessoas: {
+      label: 'Perfis',
+      singular: 'perfil',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['vinculo', 'metaAgua', 'tabagismo', 'objetivo', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome da pessoa', type:'text', required:true},
+        {name:'vinculo', label:'Quem é?', type:'text'},
+        {name:'metaAgua', label:'Meta de água por dia', type:'select', options:[['1500','1,5 L'],['1800','1,8 L'],['2000','2 L'],['2500','2,5 L'],['3000','3 L']]},
+        {name:'tabagismo', label:'Tabagismo', type:'select', options:[['nao','Não fuma'],['reduzindo','Fuma e quer reduzir'],['parou','Parou recentemente']]},
+        {name:'objetivo', label:'Objetivo principal', type:'text'},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    },
     medicacoes: {
       label: 'Medicações',
       singular: 'medicação',
@@ -824,7 +890,7 @@ a{color:inherit;}
   };
 
   function emptyRoutineData(){
-    return {medicacoes:[], suplementos:[], patologias:[], tratamentos:[]};
+    return {pessoas:[], medicacoes:[], suplementos:[], patologias:[], tratamentos:[]};
   }
 
   function loadRoutineData(){
@@ -896,9 +962,122 @@ a{color:inherit;}
     return parts.filter(Boolean).join(' · ');
   }
 
+  function activeItems(type){
+    var data = loadRoutineData();
+    return (data[type] || []).filter(function(item){ return routineStatusIsActive(type, item); });
+  }
+
+  function allConditionText(){
+    return activeItems('patologias').map(function(item){
+      return [item.nome, item.sintomas, item.cuidados, item.restricoes, item.observacoesMedicas].join(' ');
+    }).join(' ').toLowerCase();
+  }
+
+  function userHasSmokingSupport(){
+    var profiles = activeItems('pessoas');
+    if(profiles.some(function(p){ return p.tabagismo === 'reduzindo' || p.tabagismo === 'parou'; })) return true;
+    var txt = allConditionText();
+    return /tabag|cigar|nicotin|fuma/.test(txt);
+  }
+
+  function waterGoalText(){
+    var profiles = activeItems('pessoas');
+    var goals = profiles.map(function(p){ return parseInt(p.metaAgua, 10); }).filter(Boolean);
+    if(!goals.length) return '1,8 a 2 L ao longo do dia, salvo orientação médica diferente.';
+    var max = Math.max.apply(null, goals);
+    return (max / 1000).toLocaleString('pt-BR', {maximumFractionDigits:1}) + ' L ao longo do dia.';
+  }
+
+  function buildSmartTips(){
+    var tips = [];
+    var txt = allConditionText();
+    var profiles = activeItems('pessoas');
+    var activeConditions = activeItems('patologias');
+
+    if(profiles.length){
+      tips.push({
+        title: 'Perfis ativos',
+        text: profiles.map(function(p){ return p.nome; }).join(', ') + '. A rotina considera os cadastros ativos neste aparelho.'
+      });
+    }
+
+    tips.push({title:'Água', text:'Meta sugerida: ' + waterGoalText() + ' Prefira pequenos goles para não piorar refluxo ou estufamento.'});
+
+    if(/reflux|azia|gastr|queima|est[oô]mago/.test(txt)){
+      tips.push({title:'Refluxo/azia', text:'Priorize refeições menores, textura macia, pouca gordura à noite e evite deitar logo após comer.'});
+    }
+    if(/fibromialg|dor muscular|dor cr[oô]nica/.test(txt)){
+      tips.push({title:'Dor e fibromialgia', text:'Inclua pausas leves de respiração, alongamento gentil e rotina noturna previsível para reduzir sensibilização.'});
+    }
+    if(/tdah|tea|autis|ansiedad|p[aâ]nico|sensorial/.test(txt)){
+      tips.push({title:'Regulação sensorial', text:'Mantenha passos curtos, horários visíveis e refeições simples para reduzir sobrecarga e esquecimento.'});
+    }
+    if(/diabet|glicem|insulina/.test(txt)){
+      tips.push({title:'Atenção à glicemia', text:'Evite longos jejuns sem orientação profissional e combine carboidratos com proteína/fibra quando possível.'});
+    }
+    if(/hipertens|press[aã]o/.test(txt)){
+      tips.push({title:'Pressão arterial', text:'Observe sal, ultraprocessados e hidratação; siga a prescrição médica de medicações sem pular horários.'});
+    }
+    if(userHasSmokingSupport()){
+      tips.push({title:'Apoio ao tabagismo', text:'Quando vier vontade de fumar, adie 5 minutos, beba água, respire devagar e troque o gesto por algo curto com as mãos.'});
+    }
+    if(activeConditions.length && !tips.some(function(t){ return t.title === 'Condições ativas'; })){
+      tips.push({title:'Condições ativas', text:'As observações médicas cadastradas entram como lembretes de dia todo na rotina.'});
+    }
+    return tips.slice(0, 6);
+  }
+
+  function renderSmartPanel(){
+    var panel = document.getElementById('smart-panel');
+    var grid = document.getElementById('smart-grid');
+    if(!panel || !grid) return;
+    var tips = buildSmartTips();
+    panel.hidden = !tips.length;
+    grid.innerHTML = tips.map(function(tip){
+      return '<article class="smart-card"><strong>' + escapeHtml(tip.title) + '</strong><span>' + escapeHtml(tip.text) + '</span></article>';
+    }).join('');
+  }
+
   function buildCustomTimelineItems(){
     var data = loadRoutineData();
     var entries = [];
+    var hasProfiles = (data.pessoas || []).some(function(item){ return routineStatusIsActive('pessoas', item); });
+
+    if(hasProfiles){
+      [
+        ['08:30', 'Água: começo do dia'],
+        ['11:00', 'Água: antes do almoço'],
+        ['14:30', 'Água: tarde'],
+        ['17:00', 'Água: fim da tarde'],
+        ['20:00', 'Água: noite leve']
+      ].forEach(function(slot, index){
+        entries.push({
+          key: 'custom-agua-' + index,
+          time: slot[0],
+          sort: timeToMinutes(slot[0]),
+          accent: 'water',
+          title: slot[1],
+          desc: 'Beba alguns goles. Meta do dia: ' + waterGoalText()
+        });
+      });
+    }
+
+    if(userHasSmokingSupport()){
+      [
+        ['09:30', 'Pausa antitabagismo'],
+        ['15:30', 'Pausa antitabagismo'],
+        ['20:30', 'Pausa antitabagismo']
+      ].forEach(function(slot, index){
+        entries.push({
+          key: 'custom-tabagismo-' + index,
+          time: slot[0],
+          sort: timeToMinutes(slot[0]),
+          accent: 'breath',
+          title: slot[1],
+          desc: 'Se vier vontade de fumar: espere 5 minutos, respire 4 vezes bem devagar, beba água e mude de ambiente.'
+        });
+      });
+    }
 
     (data.medicacoes || []).filter(function(item){ return routineStatusIsActive('medicacoes', item); }).forEach(function(item){
       var time = item.horario || '';
@@ -959,6 +1138,7 @@ a{color:inherit;}
     var timeline = document.getElementById('daily-timeline');
     if(!timeline) return;
     captureBaseTimeline();
+    renderSmartPanel();
     var customItems = buildCustomTimelineItems();
     var allItems = BASE_TIMELINE_ITEMS.concat(customItems.map(function(entry, index){
       return {
