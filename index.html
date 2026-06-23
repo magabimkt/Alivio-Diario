@@ -1,54 +1,1224 @@
-// Alívio Diário — Service Worker
-// Cache-first shell para uso offline. Atualize CACHE_NAME ao publicar mudanças.
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alívio Diário — Plano Anti-inflamatório</title>
+<meta name="description" content="Guia diário interativo do protocolo anti-inflamatório de 7 dias: rotina, receitas, chás e suplementos em um só lugar.">
+<meta name="theme-color" content="#1E3A2C">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alívio Diário">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F0E4; --bg-soft:#E8E8D6; --card:#FFFFFF;
+  --ink:#202A22; --ink-soft:#46524A; --ink-faint:#6B7A70;
+  --line:#D6DAC6;
+  --sidebar:#1E3A2C; --sidebar-text:#EAF1E9; --sidebar-muted:#9FC2AC;
+  --primary:#3F7D5C; --primary-dark:#2A5940; --primary-soft:#DEEEE3;
+  --morning:#C2890F; --morning-dark:#8E6308; --morning-soft:#F6E6C4;
+  --midday:#BD5B2E; --midday-dark:#8B3F1E; --midday-soft:#F3DDCB;
+  --night:#3D5066; --night-dark:#293849; --night-soft:#DEE5EC;
+  --tea:#2E7D6B; --tea-dark:#1F5B4D; --tea-soft:#D9EDE7;
+  --supp:#7A5C96; --supp-dark:#5A4170; --supp-soft:#E9E1F0;
+  --region:#A8512E; --region-dark:#7C3A1F; --region-soft:#F1DACB;
+  --snack:#9C6B3E; --snack-dark:#714B29; --snack-soft:#F1E3D2;
+  --alert:#9A3324; --alert-dark:#6E2419; --alert-soft:#F4DCD3;
+  --radius-sm:10px; --radius:16px; --radius-lg:22px;
+  --shadow:0 2px 10px rgba(32,42,34,.08), 0 1px 2px rgba(32,42,34,.06);
+  --shadow-md:0 8px 24px rgba(32,42,34,.14);
+  --font-display:'Fraunces', Georgia, serif;
+  --font-body:'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono:'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  --sidebar-w:272px;
+  --topbar-h:60px;
+}
 
-const CACHE_NAME = 'alivio-diario-v3';
-const SHELL_FILES = [
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
-];
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0 0 .4em;color:var(--ink);}
+p{margin:0 0 .8em;}
+ul,ol{margin:0;padding:0;}
+button{font-family:inherit;cursor:pointer;}
+img{max-width:100%;display:block;}
+a{color:inherit;}
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL_FILES))
-      .then(() => self.skipWaiting())
-  );
-});
+.skip-link{
+  position:absolute;left:-9999px;top:0;background:var(--primary);color:#fff;
+  padding:.6em 1em;border-radius:0 0 8px 0;z-index:300;
+}
+.skip-link:focus{left:0;}
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
+:focus-visible{outline:3px solid var(--primary-dark);outline-offset:2px;border-radius:4px;}
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+.sr-only{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;
+}
+.sr-label{
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint);margin:1.1em 0 .5em;
+}
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+/* ---------- App shell ---------- */
+.app{display:flex;min-height:100vh;}
 
-      return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => {
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
-          }
-        });
-    })
-  );
-});
+.sidebar{
+  width:var(--sidebar-w);flex:0 0 var(--sidebar-w);
+  background:var(--sidebar);color:var(--sidebar-text);
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  display:flex;flex-direction:column;
+  padding:calc(28px + env(safe-area-inset-top, 0px)) 22px calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.brand-mark{
+  width:40px;height:40px;border-radius:11px;background:var(--primary);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.brand-mark svg{width:22px;height:22px;}
+.brand-text{display:flex;flex-direction:column;line-height:1.15;}
+.brand-title{font-family:var(--font-display);font-weight:600;font-size:1.18rem;color:#fff;}
+.brand-sub{font-size:.74rem;color:var(--sidebar-muted);margin-top:2px;}
+
+.sidebar-divider{height:1px;background:rgba(255,255,255,.12);margin:18px 0 14px;}
+
+.nav-list{list-style:none;display:flex;flex-direction:column;gap:3px;flex:1;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:none;border:none;color:var(--sidebar-muted);
+  padding:11px 12px;border-radius:10px;font-size:.95rem;font-weight:500;
+  text-align:left;transition:background-color .15s, color .15s;
+}
+.nav-item svg{width:19px;height:19px;flex:0 0 auto;opacity:.85;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-item--active{background:var(--primary);color:#fff;}
+.nav-item--active svg{opacity:1;}
+
+.sidebar-foot{
+  margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);
+  font-size:.74rem;color:var(--sidebar-muted);line-height:1.5;
+}
+
+/* ---------- Topbar (mobile) ---------- */
+.topbar{
+  display:none;position:sticky;top:0;z-index:60;
+  height:calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  background:var(--sidebar);color:#fff;align-items:center;gap:12px;
+  padding:env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  box-shadow:var(--shadow);
+}
+.hamburger{
+  background:none;border:none;color:#fff;display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:9px;
+}
+.hamburger:hover{background:rgba(255,255,255,.1);}
+.topbar-title{font-family:var(--font-display);font-weight:600;font-size:1.05rem;}
+
+.backdrop{
+  display:none;position:fixed;inset:0;background:rgba(20,28,22,.45);z-index:45;
+}
+.backdrop--visible{display:block;}
+
+/* ---------- Main / Views ---------- */
+.main{flex:1;min-width:0;padding:40px 44px 80px;max-width:1080px;}
+.view{display:none;}
+.view--active{display:block;}
+
+.view-header{margin-bottom:26px;}
+.view-eyebrow{
+  font-family:var(--font-mono);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--primary-dark);margin-bottom:6px;display:block;
+}
+.view-title{font-size:1.9rem;margin-bottom:4px;}
+.view-desc{color:var(--ink-soft);max-width:640px;}
+
+/* ---------- Hoje: greeting + progress ---------- */
+.greeting-row{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;
+  margin-bottom:22px;
+}
+.greeting-title{font-size:1.9rem;margin-bottom:2px;}
+.greeting-date{
+  color:var(--ink-faint);font-size:.95rem;text-transform:capitalize;
+}
+.progress-wrap{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 20px;margin-bottom:30px;box-shadow:var(--shadow);
+}
+.progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.progress-label{font-weight:600;font-size:.95rem;}
+.progress-count{font-family:var(--font-mono);font-size:.85rem;color:var(--ink-faint);}
+.progress-track{height:9px;border-radius:6px;background:var(--bg-soft);overflow:hidden;}
+.progress-fill{height:100%;background:var(--primary);border-radius:6px;transition:width .35s ease;}
+
+/* ---------- Timeline ---------- */
+.timeline{position:relative;padding-left:86px;}
+.timeline::before{
+  content:"";position:absolute;left:38px;top:6px;bottom:6px;width:2px;background:var(--line);
+}
+.timeline-node{position:relative;margin-bottom:22px;}
+.timeline-time{
+  position:absolute;left:-86px;top:2px;width:74px;text-align:right;
+  font-family:var(--font-mono);font-size:.82rem;color:var(--ink-soft);font-weight:500;
+  padding-top:4px;
+}
+.timeline-dot{
+  position:absolute;left:-50px;top:6px;width:14px;height:14px;border-radius:50%;
+  background:var(--accent, var(--primary));border:3px solid var(--bg);
+  box-shadow:0 0 0 2px var(--accent, var(--primary));
+}
+.timeline-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.timeline-node[data-accent="morning"] .timeline-card{--accent:var(--morning);}
+.timeline-node[data-accent="midday"] .timeline-card{--accent:var(--midday);}
+.timeline-node[data-accent="night"] .timeline-card{--accent:var(--night);}
+.timeline-node[data-accent="tea"] .timeline-card{--accent:var(--tea);}
+.timeline-node[data-accent="supp"] .timeline-card{--accent:var(--supp);}
+.timeline-node[data-accent="snack"] .timeline-card{--accent:var(--snack);}
+.timeline-node[data-accent="primary"] .timeline-card{--accent:var(--primary);}
+.timeline-node[data-accent="med"] .timeline-card{--accent:var(--alert);}
+.timeline-node[data-accent="treatment"] .timeline-card{--accent:var(--region);}
+.timeline-node[data-accent="condition"] .timeline-card{--accent:var(--primary);}
+.timeline-node[data-accent="morning"]{--accent:var(--morning);}
+.timeline-node[data-accent="midday"]{--accent:var(--midday);}
+.timeline-node[data-accent="night"]{--accent:var(--night);}
+.timeline-node[data-accent="tea"]{--accent:var(--tea);}
+.timeline-node[data-accent="supp"]{--accent:var(--supp);}
+.timeline-node[data-accent="snack"]{--accent:var(--snack);}
+.timeline-node[data-accent="primary"]{--accent:var(--primary);}
+.timeline-node[data-accent="med"]{--accent:var(--alert);}
+.timeline-node[data-accent="treatment"]{--accent:var(--region);}
+.timeline-node[data-accent="condition"]{--accent:var(--primary);}
+
+.timeline-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;}
+.timeline-check{
+  flex:0 0 auto;width:20px;height:20px;margin-top:2px;accent-color:var(--accent, var(--primary));
+}
+.timeline-title{font-weight:700;font-size:1.02rem;}
+.timeline-desc{color:var(--ink-soft);font-size:.93rem;margin:0 0 10px 30px;}
+.timeline-chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:30px;}
+
+.timeline-node--current .timeline-card{border-color:var(--accent, var(--primary));box-shadow:var(--shadow-md);}
+.timeline-node--current .timeline-time{color:var(--accent, var(--primary));font-weight:700;}
+.timeline-node--current::after{
+  content:"agora";position:absolute;left:-86px;top:20px;width:74px;text-align:right;
+  font-family:var(--font-mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent, var(--primary));font-weight:700;
+}
+.timeline-node--done .timeline-card{opacity:.6;}
+.timeline-node--done .timeline-title{text-decoration:line-through;text-decoration-color:var(--ink-faint);}
+
+/* ---------- Link chips ---------- */
+.link-chip{
+  display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft, var(--primary-soft));
+  color:var(--accent-dark, var(--primary-dark));border:none;border-radius:999px;
+  padding:7px 14px;font-size:.83rem;font-weight:600;
+}
+.link-chip:hover{filter:brightness(.95);}
+.link-chip[data-accent="morning"]{--accent-soft:var(--morning-soft);--accent-dark:var(--morning-dark);}
+.link-chip[data-accent="midday"]{--accent-soft:var(--midday-soft);--accent-dark:var(--midday-dark);}
+.link-chip[data-accent="night"]{--accent-soft:var(--night-soft);--accent-dark:var(--night-dark);}
+.link-chip[data-accent="tea"]{--accent-soft:var(--tea-soft);--accent-dark:var(--tea-dark);}
+.link-chip[data-accent="supp"]{--accent-soft:var(--supp-soft);--accent-dark:var(--supp-dark);}
+.link-chip[data-accent="snack"]{--accent-soft:var(--snack-soft);--accent-dark:var(--snack-dark);}
+.link-chip[data-accent="region"]{--accent-soft:var(--region-soft);--accent-dark:var(--region-dark);}
+.link-chip svg{width:14px;height:14px;}
+
+/* ---------- Tabs (Receitas) ---------- */
+.tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:0;}
+.tab-btn{
+  background:none;border:none;padding:10px 16px;font-size:.92rem;font-weight:600;
+  color:var(--ink-faint);border-bottom:3px solid transparent;margin-bottom:-1px;
+}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn--active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+.tab-panel{display:none;}
+.tab-panel--active{display:block;}
+
+.subsection-title{
+  font-family:var(--font-mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint);margin:26px 0 12px;
+}
+.subsection-title:first-child{margin-top:0;}
+
+/* ---------- Recipe cards ---------- */
+.recipe-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden;
+}
+.recipe-card--featured{border-color:var(--accent, var(--primary));border-width:1.5px;}
+.recipe-card[data-accent="morning"]{--accent:var(--morning);--accent-soft:var(--morning-soft);--accent-dark:var(--morning-dark);}
+.recipe-card[data-accent="midday"]{--accent:var(--midday);--accent-soft:var(--midday-soft);--accent-dark:var(--midday-dark);}
+.recipe-card[data-accent="night"]{--accent:var(--night);--accent-soft:var(--night-soft);--accent-dark:var(--night-dark);}
+.recipe-card[data-accent="snack"]{--accent:var(--snack);--accent-soft:var(--snack-soft);--accent-dark:var(--snack-dark);}
+
+.recipe-head{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:none;border:none;padding:15px 18px;text-align:left;
+}
+.recipe-head:hover{background:var(--bg-soft);}
+.recipe-head-text{display:flex;flex-direction:column;gap:4px;}
+.recipe-tag{
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--accent-dark, var(--primary-dark));font-weight:600;
+}
+.recipe-title{font-weight:600;font-size:1rem;}
+.chevron{flex:0 0 auto;color:var(--ink-faint);transition:transform .2s ease;}
+.recipe-head[aria-expanded="true"] .chevron{transform:rotate(180deg);}
+
+.recipe-body-inner{padding:0 18px 18px;}
+.ing-list{list-style:none;margin-bottom:6px;}
+.ing-list li{
+  padding:6px 0 6px 18px;border-bottom:1px dashed var(--line);font-size:.93rem;
+  position:relative;
+}
+.ing-list li:last-child{border-bottom:none;}
+.ing-list li::before{content:"";position:absolute;left:2px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--accent, var(--primary));}
+.steps-list{list-style:none;counter-reset:step;margin-top:10px;}
+.steps-list li{
+  counter-increment:step;position:relative;padding:6px 0 12px 34px;font-size:.93rem;color:var(--ink-soft);
+}
+.steps-list li::before{
+  content:counter(step);position:absolute;left:0;top:5px;width:24px;height:24px;border-radius:50%;
+  background:var(--accent-soft, var(--primary-soft));color:var(--accent-dark, var(--primary-dark));
+  font-family:var(--font-mono);font-size:.76rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.recipe-note{
+  margin-top:10px;padding:10px 14px;background:var(--accent-soft, var(--bg-soft));border-radius:var(--radius-sm);
+  font-size:.86rem;color:var(--ink-soft);
+}
+
+/* ---------- Info cards (chás / suplementos) ---------- */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px,1fr));gap:14px;}
+.info-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 18px 16px;box-shadow:var(--shadow);
+}
+.info-card[data-accent="tea"]{border-top:3px solid var(--tea);}
+.info-card[data-accent="supp"]{border-top:3px solid var(--supp);}
+.info-card[data-accent="region"]{border-top:3px solid var(--region);}
+.info-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;}
+.info-card-title{font-family:var(--font-display);font-weight:600;font-size:1.05rem;}
+.info-card-time{font-family:var(--font-mono);font-size:.74rem;color:var(--ink-faint);white-space:nowrap;}
+.info-card-line{font-size:.9rem;margin-bottom:6px;}
+.info-card-line strong{color:var(--ink);}
+
+/* ---------- Regras / Alert ---------- */
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px,1fr));gap:14px;margin-bottom:28px;}
+.rule-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
+}
+.rule-card h3{font-size:1rem;margin-bottom:6px;}
+.rule-card p{font-size:.9rem;color:var(--ink-soft);margin:0;}
+
+.alert-callout{
+  background:var(--alert-soft);border:1.5px solid var(--alert);border-radius:var(--radius-lg);
+  padding:22px 24px;display:flex;gap:16px;align-items:flex-start;
+}
+.alert-callout svg{flex:0 0 auto;color:var(--alert);margin-top:2px;}
+.alert-callout h3{color:var(--alert-dark);margin-bottom:6px;}
+.alert-callout p{color:var(--ink);margin:0;}
+
+/* ---------- Minha Rotina ---------- */
+.routine-manager{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);margin-bottom:26px;
+}
+.routine-tabs{
+  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;
+}
+.routine-tab{
+  background:var(--bg-soft);border:1px solid var(--line);color:var(--ink-soft);
+  border-radius:999px;padding:9px 14px;font-size:.88rem;font-weight:700;
+}
+.routine-tab--active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.routine-form-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;
+}
+.routine-form-head h2{font-size:1.18rem;margin-bottom:2px;}
+.routine-form-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+}
+.routine-field{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.82rem;color:var(--ink-soft);}
+.routine-field--wide{grid-column:1/-1;}
+.routine-field input,.routine-field select,.routine-field textarea{
+  width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:#fff;color:var(--ink);font:inherit;font-weight:400;padding:10px 12px;
+}
+.routine-field textarea{min-height:92px;resize:vertical;}
+.routine-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.routine-btn{
+  border:none;border-radius:999px;padding:10px 16px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.routine-btn--primary{background:var(--primary);color:#fff;}
+.routine-btn--secondary{background:var(--bg-soft);color:var(--ink);}
+.routine-list{display:grid;gap:12px;}
+.routine-empty{
+  border:1.5px dashed var(--line);border-radius:var(--radius);
+  padding:22px;text-align:center;color:var(--ink-faint);background:rgba(255,255,255,.48);
+}
+.routine-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.routine-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.routine-card-title{font-family:var(--font-display);font-weight:600;font-size:1.08rem;margin:0 0 6px;}
+.routine-status{
+  display:inline-flex;border-radius:999px;padding:4px 10px;
+  font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;
+}
+.routine-status--active{background:var(--primary-soft);color:var(--primary-dark);}
+.routine-status--inactive{background:var(--bg-soft);color:var(--ink-faint);}
+.routine-card-actions{display:flex;gap:6px;flex:0 0 auto;}
+.routine-icon-btn{
+  width:36px;height:36px;border:none;border-radius:999px;background:var(--bg-soft);color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;font-weight:700;
+}
+.routine-icon-btn--danger{background:var(--alert-soft);color:var(--alert-dark);}
+.routine-card-details{
+  display:grid;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  color:var(--ink-soft);font-size:.92rem;
+}
+.routine-card-details strong{color:var(--ink);}
+
+/* ---------- Guia Nordestino ---------- */
+.region-section{margin-bottom:30px;}
+.region-section h3{font-size:1.08rem;margin-bottom:12px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+.avoid-chip{
+  background:var(--alert-soft);color:var(--alert-dark);border-radius:999px;padding:7px 14px;
+  font-size:.86rem;font-weight:600;
+}
+
+/* ---------- FAB ---------- */
+.fab{
+  position:fixed;bottom:calc(24px + env(safe-area-inset-bottom, 0px));right:calc(24px + env(safe-area-inset-right, 0px));z-index:80;
+  background:var(--alert);color:#fff;border:none;border-radius:999px;
+  padding:14px 20px;display:flex;align-items:center;gap:10px;
+  font-weight:700;font-size:.92rem;box-shadow:var(--shadow-md);
+}
+.fab:hover{background:var(--alert-dark);}
+.fab svg{width:20px;height:20px;}
+
+.modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(20,28,22,.5);z-index:120;
+  align-items:center;justify-content:center;
+  padding:max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+}
+.modal-backdrop--visible{display:flex;}
+.modal{
+  background:var(--card);border-radius:var(--radius-lg);max-width:420px;width:100%;
+  padding:26px;box-shadow:var(--shadow-md);position:relative;
+}
+.modal-close{
+  position:absolute;top:14px;right:14px;background:none;border:none;color:var(--ink-faint);
+  width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:var(--bg-soft);}
+.modal h3{color:var(--alert-dark);margin-bottom:10px;padding-right:30px;}
+.modal-chips{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;}
+
+/* ---------- Highlight flash ---------- */
+@keyframes flashHighlight{
+  0%{box-shadow:0 0 0 0 rgba(63,125,92,0);}
+  20%{box-shadow:0 0 0 4px var(--accent-dark, var(--primary));}
+  100%{box-shadow:0 0 0 0 rgba(63,125,92,0);}
+}
+.flash-highlight{animation:flashHighlight 1.1s ease-out;}
+
+/* ---------- Responsive ---------- */
+@media (max-width:880px){
+  .sidebar{
+    position:fixed;left:0;top:0;height:100vh;transform:translateX(-100%);
+    transition:transform .25s ease;box-shadow:var(--shadow-md);
+  }
+  .sidebar--open{transform:translateX(0);}
+  .topbar{display:flex;}
+  .backdrop{display:none;}
+  .backdrop--visible{display:block;}
+  .main{padding:26px 18px calc(70px + env(safe-area-inset-bottom, 0px));max-width:100%;}
+  .timeline{padding-left:64px;}
+  .timeline-time{left:-64px;width:54px;font-size:.74rem;}
+  .timeline-dot{left:-36px;}
+  .timeline-node--current::after{left:-64px;width:54px;}
+  .fab{right:calc(16px + env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));padding:12px 16px;font-size:.85rem;}
+  .view-title{font-size:1.5rem;}
+  .routine-form-grid{grid-template-columns:1fr;}
+  .routine-card-top{align-items:flex-start;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001s !important;transition-duration:.001s !important;}
+}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Pular para o conteúdo</a>
+<div class="backdrop"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-7-4.4-7-10.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 7 5.5C19 16.6 12 21 12 21Z" stroke="#EAF1E9" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v8" stroke="#EAF1E9" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-title">Alívio Diário</span>
+        <span class="brand-sub">Plano anti-inflamatório · 7 dias</span>
+      </span>
+    </div>
+    <div class="sidebar-divider"></div>
+    <ul class="nav-list"><li><button class="nav-item nav-item--active" type="button" data-target="hoje"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Hoje</span></button></li><li><button class="nav-item" type="button" data-target="receitas"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4v16M6 4c0 3-2 3-2 6s2 3 2 3M10 4v6a2 2 0 1 0 4 0V4M12 10v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Receitas</span></button></li><li><button class="nav-item" type="button" data-target="chas"><svg viewBox="0 0 24 24" fill="none"><path d="M4 10h14v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 11h1.5a2 2 0 1 1 0 4H18" stroke="currentColor" stroke-width="1.6"/><path d="M8 4c0 1-1.2 1.2-1.2 2.4S8 7.8 8 8.8M12 4c0 1-1.2 1.2-1.2 2.4S12 7.8 12 8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Chás</span></button></li><li><button class="nav-item" type="button" data-target="suplementos"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="9" width="17" height="7" rx="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 9v7" stroke="currentColor" stroke-width="1.6"/></svg><span>Suplementos</span></button></li><li><button class="nav-item" type="button" data-target="minha-rotina"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10M7 8h10M5 12h14M7 16h10M9 20h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Minha Rotina</span></button></li><li><button class="nav-item" type="button" data-target="regras"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Regras de Ouro</span></button></li><li><button class="nav-item" type="button" data-target="guia"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg><span>Guia Nordestino</span></button></li></ul>
+    <div class="sidebar-foot">Sem glúten · sem lactose · sem enlatados<br>Feito para o seu dia a dia.</div>
+  </aside>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <header class="topbar">
+      <button class="hamburger" type="button" aria-label="Abrir menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <span class="topbar-title">Alívio Diário</span>
+    </header>
+
+    <main class="main" id="main-content">
+
+      <section class="view view--active" id="view-hoje">
+        <div class="greeting-row">
+          <div>
+            <span class="view-eyebrow">Linha do dia</span>
+            <h1 class="greeting-title"><span id="greeting-text">Olá</span></h1>
+            <p class="greeting-date" id="greeting-date"></p>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-top">
+            <span class="progress-label">Progresso de hoje</span>
+            <span class="progress-count" id="progress-count">0 de 0 concluídos</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+        <ul class="timeline" id="daily-timeline"><li class="timeline-node" data-accent="supp" data-time="06:30" data-key="jejum"><span class="timeline-time">06:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="jejum" id="check-jejum" aria-label="Marcar Jejum — proteger e reparar como concluído"><span class="timeline-title">Jejum — proteger e reparar</span></div><p class="timeline-desc">1 xícara morna de Chá de Espinheira-Santa + 5 g de L-Glutamina diluída. Aguarde 20 minutos antes de comer.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Chá de Espinheira-Santa</button><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-glutamina">L-Glutamina</button></div></div></li><li class="timeline-node" data-accent="morning" data-time="07:00" data-key="cafe"><span class="timeline-time">07:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cafe" id="check-cafe" aria-label="Marcar Café da manhã como concluído"><span class="timeline-title">Café da manhã</span></div><p class="timeline-desc">Ovos mexidos (na manteiga ghee ou azeite) + raiz cozida bem macia (mandioca/macaxeira ou batata-doce) + 1 fatia de melão ou mamão picado.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="morning" data-view="receitas" data-tab="cafe" data-target="rec-cafe-featured">Ver receita do dia</button></div></div></li><li class="timeline-node" data-accent="tea" data-time="10:00" data-key="cha-manha"><span class="timeline-time">10:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cha-manha" id="check-cha-manha" aria-label="Marcar Chá da manhã como concluído"><span class="timeline-title">Chá da manhã</span></div><p class="timeline-desc">1 xícara morna de Chá de Erva-Doce — reduz gases e acalma o estômago.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-ervadoce">Chá de Erva-Doce</button></div></div></li><li class="timeline-node" data-accent="supp" data-time="11:45" data-key="enzimas-almoco"><span class="timeline-time">11:45</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="enzimas-almoco" id="check-enzimas-almoco" aria-label="Marcar Antes do almoço como concluído"><span class="timeline-title">Antes do almoço</span></div><p class="timeline-desc">1 cápsula de Enzimas Digestivas.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-enzimas">Enzimas Digestivas</button></div></div></li><li class="timeline-node" data-accent="midday" data-time="12:00" data-key="almoco"><span class="timeline-time">12:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="almoco" id="check-almoco" aria-label="Marcar Almoço como concluído"><span class="timeline-title">Almoço</span></div><p class="timeline-desc">Arroz branco bem cozido ou purê de batata + filé de frango ou peixe grelhado bem desfiado + chuchu ou cenoura cozidos até ficarem bem moles.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="midday" data-view="receitas" data-tab="almoco" data-target="rec-almoco-1">Ver receita sugerida</button></div></div></li><li class="timeline-node" data-accent="snack" data-time="16:00" data-key="lanche"><span class="timeline-time">16:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="lanche" id="check-lanche" aria-label="Marcar Lanche da tarde como concluído"><span class="timeline-title">Lanche da tarde</span></div><p class="timeline-desc">Macarrão de arroz com frango desfiado OU banana amassada com aveia e mel.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-lanche-macarrao">Opção A: macarrão de arroz</button><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-lanche-banana">Opção B: banana com aveia</button></div></div></li><li class="timeline-node" data-accent="tea" data-time="17:30" data-key="cha-tarde"><span class="timeline-time">17:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="cha-tarde" id="check-cha-tarde" aria-label="Marcar Chá do fim de tarde como concluído"><span class="timeline-title">Chá do fim de tarde</span></div><p class="timeline-desc">1 xícara morna de Chá de Espinheira-Santa — prevenção contra a azia noturna.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Chá de Espinheira-Santa</button></div></div></li><li class="timeline-node" data-accent="supp" data-time="18:45" data-key="enzimas-jantar"><span class="timeline-time">18:45</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="enzimas-jantar" id="check-enzimas-jantar" aria-label="Marcar Antes do jantar como concluído"><span class="timeline-title">Antes do jantar</span></div><p class="timeline-desc">1 cápsula de Enzimas Digestivas.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-enzimas">Enzimas Digestivas</button></div></div></li><li class="timeline-node" data-accent="night" data-time="19:00" data-key="jantar"><span class="timeline-time">19:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="jantar" id="check-jantar" aria-label="Marcar Jantar como concluído"><span class="timeline-title">Jantar</span></div><p class="timeline-desc">Sopa cremosa de mandioquinha com abobrinha e frango desfiado, batida no liquidificador para facilitar o esvaziamento gástrico.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="night" data-view="receitas" data-tab="jantar" data-target="rec-jantar-fixo">Ver receita</button></div></div></li><li class="timeline-node" data-accent="snack" data-time="21:00" data-key="ceia"><span class="timeline-time">21:00</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="ceia" id="check-ceia" aria-label="Marcar Ceia anti-fome como concluído"><span class="timeline-title">Ceia anti-fome</span></div><p class="timeline-desc">30 minutos antes de deitar: Mingau Conforto Noturno + dose de Magnésio Inositol diluído em água.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="snack" data-view="receitas" data-tab="lanches" data-target="rec-ceia-fixa">Mingau Conforto Noturno</button><button class="link-chip" type="button" data-accent="supp" data-view="suplementos" data-tab="" data-target="sup-magnesio">Magnésio Inositol</button></div></div></li><li class="timeline-node" data-accent="primary" data-time="21:30" data-key="dormir"><span class="timeline-time">21:30</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head"><input type="checkbox" class="timeline-check" data-key="dormir" id="check-dormir" aria-label="Marcar Na hora de dormir como concluído"><span class="timeline-title">Na hora de dormir</span></div><p class="timeline-desc">Durma virada para o lado esquerdo, com a cabeceira levemente elevada — isso impede mecanicamente a subida do ácido gástrico.</p><div class="timeline-chips"><button class="link-chip" type="button" data-accent="primary" data-view="regras" data-tab="" data-target="">Ver Regras de Ouro</button></div></div></li></ul>
+      </section>
+
+      <section class="view" id="view-receitas">
+        <div class="view-header">
+          <span class="view-eyebrow">Receitas</span>
+          <h1 class="view-title">Café, almoço, jantar e lanches</h1>
+          <p class="view-desc">Clique em qualquer receita para abrir o passo a passo completo.</p>
+        </div>
+        <div class="tabs" role="tablist">
+          <button class="tab-btn tab-btn--active" type="button" data-tab="cafe" role="tab" aria-selected="true">Café da manhã</button>
+          <button class="tab-btn" type="button" data-tab="almoco" role="tab" aria-selected="false">Almoço</button>
+          <button class="tab-btn" type="button" data-tab="jantar" role="tab" aria-selected="false">Jantar</button>
+          <button class="tab-btn" type="button" data-tab="lanches" role="tab" aria-selected="false">Lanches &amp; ceia</button>
+        </div>
+        <div class="tab-panel tab-panel--active" id="tab-cafe"><article class="recipe-card recipe-card--featured" id="rec-cafe-featured" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-featured-body"><span class="recipe-head-text"><span class="recipe-tag">Receita do dia · cardápio fixo</span><span class="recipe-title">Ovos mexidos com raiz cozida e fruta</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-featured-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>2 a 3 ovos inteiros</li><li>1 colher de sopa de manteiga ghee ou azeite</li><li>1 pedaço médio de raiz bem macia: mandioca/macaxeira ou batata-doce</li><li>1 fatia de melão ou mamão picado</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Descasque e cozinhe a raiz escolhida em água com sal até ficar bem macia, quase desmanchando.</li><li>Aqueça a manteiga ghee ou o azeite em uma frigideira e bata os ovos levemente com uma pitada de sal.</li><li>Despeje os ovos na frigideira e mexa em fogo baixo até ficarem cozidos, mas ainda úmidos.</li><li>Sirva os ovos mexidos junto com a raiz cozida e a fatia de fruta.</li></ol><p class="recipe-note">Esta é a combinação-base do cardápio fixo. Para variar, veja as 10 opções de café da manhã abaixo.</p></div></div></article><article class="recipe-card " id="rec-cafe-1" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-1-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 1</span><span class="recipe-title">Macaxeira cozida com ovos estalados no azeite</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-1-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de macaxeira descascada</li><li>4 ovos inteiros</li><li>2 colheres de sopa de azeite de oliva</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Corte a macaxeira em pedaços e coloque na panela de pressão com água e sal. Cozinhe por 15 minutos após pegar pressão, até que fique bem macia (quase derretendo).</li><li>Em uma frigideira, aqueça o azeite e estale os ovos, abafando com uma tampa para cozinhar a gema sem queimar a borda.</li><li>Sirva a macaxeira quente com os ovos por cima.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-2" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-2-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 2</span><span class="recipe-title">Inhame da costa amassado com frango desfiado</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-2-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>3 inhames médios</li><li>200 g de peito de frango cozido e desfiado</li><li>1 colher de sopa de azeite</li><li>Sal e coentro picado a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Descasque os inhames, corte em rodelas e cozinhe em água e sal até ficarem bem macios.</li><li>Escorra e amasse-os com um garfo ainda quentes, misturando o azeite para dar cremosidade.</li><li>Incorpore o frango desfiado temperado levemente e finalize com o coentro.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-3" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-3-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 3</span><span class="recipe-title">Cuscuz de milho com ovos mexidos úmidos</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-3-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>1 xícara e meia de flocão de milho (certificado sem glúten)</li><li>3/4 de xícara de água</li><li>4 ovos</li><li>1 colher de sopa de manteiga ghee ou azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Umedeça o flocão com a água e o sal. Deixe descansar por 10 minutos — passo crucial para o cuscuz ficar macio e não pesar no estômago.</li><li>Coloque na cuscuzeira e cozinhe no vapor por 10 minutos.</li><li>Em paralelo, bata os ovos com uma pitada de sal e mexa em fogo baixo com a manteiga ghee até ficarem cozidos, mas úmidos.</li><li>Sirva com o cuscuz quente.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-4" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-4-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 4</span><span class="recipe-title">Batata-doce assada com patê de atum fresco</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-4-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>3 batatas-doces médias</li><li>1 posta de peixe fresco cozida e desfiada (ou frango desfiado, se preferir evitar peixe cedo)</li><li>2 colheres de sopa de creme de leite zero lactose</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Lave bem as batatas, corte ao meio e asse no forno ou na airfryer até que o garfo entre facilmente.</li><li>Misture o peixe desfiado com o creme de leite zero lactose e o sal até virar um patê.</li><li>Recheie as batatas-doces com essa mistura.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-5" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-5-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 5</span><span class="recipe-title">Panqueca de banana com aveia e canela</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-5-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>2 bananas maduras (da terra ou prata)</li><li>2 ovos inteiros</li><li>4 colheres de sopa de farelo de aveia (sem glúten)</li><li>1 colher de chá de canela em pó</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Amasse bem as bananas com um garfo.</li><li>Misture os ovos e o farelo de aveia até formar uma massa homogênea.</li><li>Aqueça uma frigideira antiaderente untada com gotas de azeite. Despeje pequenas porções da massa, doure dos dois lados em fogo baixo e polvilhe a canela por cima antes de servir.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-6" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-6-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 6</span><span class="recipe-title">Mingau de goma de tapioca com leite de coco</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-6-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>4 colheres de sopa de goma de tapioca hidratada</li><li>400 ml de leite de coco caseiro ou de vidrinho tradicional</li><li>1 colher de sopa de açúcar demerara ou mel</li><li>1 pitada de sal</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Em uma panela, misture a goma de tapioca e o leite de coco ainda frios até dissolver completamente.</li><li>Adicione o açúcar/mel e a pitada de sal. Leve ao fogo baixo, mexendo sem parar, até o mingau engrossar e ficar transparente e cremoso.</li><li>Sirva morno — excelente para forrar o estômago.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-7" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-7-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 7</span><span class="recipe-title">Omelete de abobrinha ralada com coentro</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-7-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>5 ovos</li><li>1 xícara de abobrinha ralada fina</li><li>1 colher de sopa de azeite</li><li>Sal e coentro a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Bata os ovos em uma tigela com o sal e o coentro.</li><li>Esprema a abobrinha ralada em um pano para tirar o excesso de água e misture aos ovos.</li><li>Aqueça o azeite na frigideira, despeje a mistura e cozinhe tampado em fogo baixo. Gire para dourar o outro lado.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-8" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-8-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 8</span><span class="recipe-title">Beiju de tapioca recheado com frango e azeite</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-8-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>6 colheres de sopa de goma de tapioca pronta</li><li>150 g de peito de frango cozido, desfiado e temperado com ervas</li><li>1 fio de azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Peneire a goma diretamente em uma frigideira quente.</li><li>Quando as bordas levantarem, vire para assar o outro lado por 30 segundos.</li><li>Recheie com o frango desfiado aquecido e adicione um fio de azeite antes de fechar.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-9" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-9-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 9</span><span class="recipe-title">Purê conforto de jerimum com ovos poché</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-9-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de jerimum (abóbora leite ou cabotiá)</li><li>4 ovos</li><li>1 colher de sobremesa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe o jerimum sem casca no vapor ou na água com sal até desmanchar. Amasse bem com o garfo e misture o azeite até virar um purê liso.</li><li>Para os ovos poché: ferva água em uma panela com um fio de vinagre, faça um redemoinho na água com uma colher e quebre o ovo bem no centro.</li><li>Cozinhe por 3 minutos e sirva sobre o purê.</li></ol></div></div></article><article class="recipe-card " id="rec-cafe-10" data-accent="morning"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-cafe-10-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 10</span><span class="recipe-title">Papa de aveia com leite zero lactose e raspas de coco</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-cafe-10-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>5 colheres de sopa de farelo de aveia sem glúten</li><li>500 ml de leite zero lactose</li><li>1 colher de sopa de coco ralado fresco (sem açúcar)</li><li>1 colher de sopa de mel</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Misture a aveia e o leite em uma panela. Leve ao fogo médio, mexendo sempre até obter consistência de papa.</li><li>Desligue o fogo, adicione o mel e sirva com as raspas de coco ralado fresco por cima.</li></ol></div></div></article></div>
+        <div class="tab-panel" id="tab-almoco"><article class="recipe-card recipe-card--featured" id="rec-almoco-1" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-1-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 1 · sugestão do cardápio fixo</span><span class="recipe-title">Peixe cozido à moda paraibana com chuchu</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-1-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de filé ou postas de peixe de água salgada (como cavala ou cioba)</li><li>2 chuchus cortados em cubos</li><li>1 tomate sem pele picado</li><li>Coentro a gosto</li><li>Sal a gosto</li><li>1 colher de sopa de azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Em uma panela larga, faça uma cama com o tomate picado e o chuchu. Acomode o peixe por cima.</li><li>Tempere com sal e o coentro. Adicione meia xícara de água e tampe.</li><li>Deixe cozinhar em fogo médio por 15 minutos — o peixe e o chuchu soltam água.</li><li>Finalize com o azeite e sirva com arroz branco.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-2" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-2-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 2</span><span class="recipe-title">Frango de panela desfiado com purê de batata inglesa</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-2-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de peito de frango em cubos</li><li>4 batatas grandes</li><li>3 colheres de sopa de leite zero lactose</li><li>2 colheres de sopa de azeite</li><li>Sal e colorau a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Refogue o frango com azeite, sal e colorau na panela tampada até cozinhar e desfiar facilmente.</li><li>Cozinhe as batatas sem casca até ficarem bem moles, amasse-as e misture o leite zero lactose e 1 colher de azeite em fogo baixo até obter um purê bem liso e leve.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-3" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-3-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 3</span><span class="recipe-title">Carne de sol caseira de frango com arroz de cenoura</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-3-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de filé de peito de frango picado bem fino</li><li>1 colher de sopa rasa de sal (para curar levemente na geladeira por 3 horas)</li><li>1 xícara de arroz branco</li><li>1 cenoura ralada fina</li><li>2 colheres de sopa de azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Após curar o frango com sal na geladeira, lave-o levemente para tirar o excesso e grelhe no azeite até dourar.</li><li>Refogue o arroz com a cenoura ralada e água fervente com sal até cozinhar bem.</li><li>Sirva junto com legumes cozidos.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-4" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-4-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 4</span><span class="recipe-title">Macarrão de arroz ao molho cremoso de frango</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-4-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>250 g de macarrão de arroz (tipo espaguete ou parafuso)</li><li>300 g de frango desfiado</li><li>1 caixinha de creme de leite zero lactose</li><li>Sal, azeite e salsinha picada</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe o macarrão de arroz em água fervente com sal pelo tempo indicado na embalagem (geralmente 6 a 8 minutos), escorra e jogue água fria para não grudar.</li><li>Em outra panela, misture o frango desfiado, o creme de leite zero lactose e o sal, e aqueça.</li><li>Incorpore o macarrão e finalize com a salsinha.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-5" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-5-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 5</span><span class="recipe-title">Escondidinho de macaxeira com carne moída limpa</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-5-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de macaxeira cozida</li><li>4 colheres de sopa de leite zero lactose</li><li>350 g de carne moída de patinho (refogada apenas com sal, tomate picado e azeite)</li><li>1 colher de sopa de azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Processe ou amasse a macaxeira quente com o leite zero lactose e o azeite até virar um creme denso.</li><li>Em um refratário, faça uma camada do purê de macaxeira, coloque a carne moída bem cozida no meio e cubra com o restante do purê.</li><li>Leve ao forno por 10 minutos apenas para firmar.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-6" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-6-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 6</span><span class="recipe-title">Picadinho de carne com cenoura e chuchu bem cozidos</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-6-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>400 g de carne bovina macia (como coxão mole) cortada em cubos bem pequenos</li><li>1 cenoura em cubos</li><li>1 chuchu em cubos</li><li>1 colher de sopa de azeite</li><li>Sal e colorau a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Sele a carne no azeite com sal e colorau. Adicione a cenoura e cubra com água. Cozinhe por 15 minutos.</li><li>Adicione o chuchu (que cozinha mais rápido) e deixe no fogo até que todos os legumes estejam derretendo de tão macios e o caldo engrosse naturalmente.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-7" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-7-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 7</span><span class="recipe-title">Sobrecoxa de frango assada (sem pele) com arroz branco e abobrinha</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-7-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>4 sobrecoxas de frango (retire toda a pele e gordura visível)</li><li>1 xícara de arroz branco</li><li>1 abobrinha cortada em rodelas finas</li><li>Sal e azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Tempere o frango com sal e asse no forno até ficar bem macio por dentro.</li><li>Cozinhe o arroz normalmente.</li><li>Grelhe as rodelas de abobrinha rapidamente em uma frigideira com azeite e sal até murcharem.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-8" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-8-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 8</span><span class="recipe-title">Arroz de forno prático com peixe desfiado e creme zero lactose</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-8-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>2 xícaras de arroz branco já cozido</li><li>250 g de peixe fresco cozido e desfiado</li><li>1 caixinha de creme de leite zero lactose</li><li>Sal e coentro</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Misture em uma tigela o arroz cozido, o peixe desfiado, o creme de leite zero lactose, o sal e o coentro.</li><li>Transfira para um refratário de vidro e leve ao forno médio por 15 minutos para aquecer uniformemente.</li><li>Fica muito macio e úmido, facilitando a digestão.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-9" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-9-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 9</span><span class="recipe-title">Ensopado de frango com jerimum e batata-doce</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-9-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>400 g de peito de frango em cubos</li><li>200 g de jerimum em cubos</li><li>1 batata-doce média em cubos</li><li>1 colher de sopa de azeite</li><li>Sal e coentro a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Refogue o frango no azeite com sal.</li><li>Adicione os cubos de batata-doce e jerimum. Coloque 1 xícara de água, tampe a panela e cozinhe em fogo baixo até que os legumes comecem a desmanchar e formar um caldo aveludado.</li></ol></div></div></article><article class="recipe-card " id="rec-almoco-10" data-accent="midday"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-almoco-10-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 10 · complementada por nós</span><span class="recipe-title">Caldeirada leve de peixe com leite de coco e arroz</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-almoco-10-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>Postas de peixe branco (como cioba ou pescada)</li><li>200 ml de leite de coco</li><li>1 tomate sem pele picado</li><li>1 chuchu em cubos</li><li>Coentro e sal a gosto</li><li>Arroz branco para acompanhar</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Refogue o tomate e o chuchu com um fio de azeite e sal.</li><li>Acomode as postas de peixe por cima, cubra com o leite de coco e tampe a panela.</li><li>Cozinhe em fogo baixo por cerca de 12 minutos, até o peixe ficar macio e o caldo levemente engrossado. Sirva com arroz branco.</li></ol><p class="recipe-note">No seu PDF original, esta opção aparece apenas com o título, sem ingredientes e modo de preparo detalhados. A receita acima foi complementada por nós, seguindo os mesmos princípios do seu plano (texturas macias, sem glúten/lactose/enlatados) — ajuste como preferir.</p></div></div></article></div>
+        <div class="tab-panel" id="tab-jantar"><article class="recipe-card recipe-card--featured" id="rec-jantar-fixo" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-fixo-body"><span class="recipe-head-text"><span class="recipe-tag">Receita do dia · cardápio fixo</span><span class="recipe-title">Sopa cremosa de mandioquinha com abobrinha e frango desfiado</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-fixo-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>2 mandioquinhas (batata baroa) grandes</li><li>1 abobrinha média sem casca</li><li>150 g de peito de frango cozido e desfiado</li><li>1 colher de sopa de azeite</li><li>Sal a gosto</li><li>1 pitada de alecrim</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Descasque e cozinhe a mandioquinha e a abobrinha em água com sal até ficarem bem macias.</li><li>Bata os legumes no liquidificador com um pouco da água do cozimento até virar um creme liso.</li><li>Despeje em uma panela, adicione o frango desfiado, o azeite e o alecrim.</li><li>Deixe ferver por 3 minutos e sirva morno — bater no liquidificador facilita o esvaziamento gástrico.</li></ol><p class="recipe-note">Esta é a sugestão do cardápio fixo para o jantar. Para variar, veja as 10 opções abaixo.</p></div></div></article><article class="recipe-card " id="rec-jantar-1" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-1-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 1 · Altamente reparadora</span><span class="recipe-title">Sopa creme de inhame com frango desfiado</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-1-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>4 inhames médios</li><li>200 g de peito de frango cozido e desfiado</li><li>1 colher de sopa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe os inhames descascados em água e sal até ficarem muito macios.</li><li>Bata os inhames no liquidificador com a própria água do cozimento até obter um creme sedoso.</li><li>Volte o creme para a panela, misture o frango desfiado e o azeite. Deixe ferver por 3 minutos.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-2" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-2-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 2</span><span class="recipe-title">Canja de galinha tradicional com arroz e cenoura</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-2-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>300 g de peito de frango em cubos bem pequenos</li><li>1/2 xícara de arroz branco cru</li><li>1 cenoura grande ralada ou em cubos minúsculos</li><li>Sal, azeite e coentro a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Refogue o frango no azeite e sal.</li><li>Adicione 1 litro de água fervente, o arroz e a cenoura.</li><li>Cozinhe em fogo médio com a panela semitampada por cerca de 20 minutos, até o arroz abrir bem e a sopa ficar encorpada.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-3" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-3-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 3</span><span class="recipe-title">Caldo de jerimum com toque de creme zero lactose</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-3-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>600 g de jerimum (abóbora)</li><li>1/2 caixinha de creme de leite zero lactose</li><li>150 g de frango desfiado para acompanhar</li><li>Sal e azeite</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe o jerimum em água e sal. Bata no liquidificador com um pouco da água até virar um caldo.</li><li>Volte ao fogo, adicione o frango desfiado, o azeite e finalize misturando o creme de leite zero lactose em fogo baixo.</li><li>Desligue antes de ferver novamente.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-4" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-4-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 4</span><span class="recipe-title">Sopa de macarrão de arroz com legumes macios</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-4-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>100 g de macarrão de arroz picado</li><li>1 chuchu em cubos pequenos</li><li>1 cenoura em cubos pequenos</li><li>200 g de frango desfiado</li><li>1 litro de caldo de galinha caseiro (feito com ossos/carcaça de frango e sal, sem cubos industrializados)</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Coloque os legumes para cozinhar no caldo caseiro com sal.</li><li>Quando estiverem macios, adicione o frango desfiado e o macarrão de arroz.</li><li>O macarrão cozinha em apenas 5 minutos no caldo quente. Sirva morno.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-5" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-5-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 5</span><span class="recipe-title">Purê de batata-doce com peixe grelhado picadinho</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-5-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>3 batatas-doces grandes</li><li>300 g de filé de peixe fresco</li><li>2 colheres de sopa de leite zero lactose</li><li>2 colheres de sopa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe as batatas-doces e faça um purê bem liso adicionando o leite zero lactose e 1 colher de azeite.</li><li>Em uma frigideira separada, grelhe o peixe no azeite restante com sal, quebrando-o em pedaços pequenos com a espátula.</li><li>Sirva o peixe sobre o purê.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-6" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-6-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 6</span><span class="recipe-title">Caldo de ossos concentrado com vegetais cozidos</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-6-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>500 g de ossos de patinho ou carcaça de frango</li><li>1 colher de sopa de vinagre (para extrair os nutrientes)</li><li>1 chuchu picado</li><li>1 cenoura picada</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe os ossos na panela de pressão com água, sal e o vinagre por 40 minutos.</li><li>Coe o caldo descartando os ossos.</li><li>Use esse líquido rico em colágeno e glutamina para cozinhar o chuchu e a cenoura até ficarem bem macios. Consuma o caldo com os vegetais.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-7" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-7-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 7 · Baixíssima fermentação</span><span class="recipe-title">Creme de chuchu e abobrinha com frango</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-7-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>2 chuchus grandes</li><li>1 abobrinha descascada</li><li>200 g de peito de frango cozido</li><li>1 colher de sopa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe o chuchu e a abobrinha com pouca água e sal.</li><li>Bata no liquidificador com o azeite até virar um creme verde claro bem leve.</li><li>Misture o frango desfiado e consuma quente — excelente para noites em que a azia está forte.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-8" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-8-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 8 · Jantar conforto</span><span class="recipe-title">Cuscuz de milho com leite de coco morno</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-8-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>1 xícara de flocão de milho sem glúten (hidratado e cozido na cuscuzeira)</li><li>200 ml de leite de coco tradicional morno</li><li>1 pitada de sal</li><li>2 ovos cozidos picados</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Com o cuscuz ainda quente na tigela, regue com o leite de coco morno levemente salgado até que ele absorva e fique bem úmido.</li><li>Acompanhe com os ovos cozidos picados — prato tradicional, de fácil digestão e muito econômico.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-9" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-9-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 9</span><span class="recipe-title">Mingau de aveia salgado com frango desfiado</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-9-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>4 colheres de sopa de farelo de aveia sem glúten</li><li>400 ml de água ou caldo de frango caseiro</li><li>150 g de frango desfiado</li><li>1 colher de sobremesa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe a aveia no caldo de frango ou água com sal, mexendo sempre, até virar um mingau grosso.</li><li>Desligue o fogo, misture o frango desfiado aquecido e o azeite.</li><li>A aveia salgada funciona como um substituto maravilhoso e seguro para sopas tradicionais.</li></ol></div></div></article><article class="recipe-card " id="rec-jantar-10" data-accent="night"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-jantar-10-body"><span class="recipe-head-text"><span class="recipe-tag">Opção 10</span><span class="recipe-title">Sopa creme de mandioquinha (batata baroa) simples</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-jantar-10-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>4 mandioquinhas grandes</li><li>150 g de carne de frango ou peixe desfiada</li><li>1 colher de sopa de azeite</li><li>Sal a gosto</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe as mandioquinhas descascadas até derreterem.</li><li>Bata no liquidificador com a água do cozimento e o sal até obter um creme amarelo brilhante e liso.</li><li>Misture a proteína desfiada e o azeite — conforto imediato para o estômago antes de dormir.</li></ol></div></div></article></div>
+        <div class="tab-panel" id="tab-lanches"><p class="subsection-title">Lanche da tarde · 16h (escolha uma opção)</p><article class="recipe-card " id="rec-lanche-macarrao" data-accent="snack"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-lanche-macarrao-body"><span class="recipe-head-text"><span class="recipe-tag">Opção A</span><span class="recipe-title">Macarrão de arroz com frango desfiado</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-lanche-macarrao-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>Macarrão de arroz sem glúten</li><li>1 fio de azeite</li><li>1 pitada de sal</li><li>Frango desfiado</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Cozinhe o macarrão de arroz conforme as instruções da embalagem.</li><li>Escorra e finalize com um fio de azeite e uma pitada de sal.</li><li>Sirva com o frango desfiado por cima.</li></ol></div></div></article><article class="recipe-card " id="rec-lanche-banana" data-accent="snack"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-lanche-banana-body"><span class="recipe-head-text"><span class="recipe-tag">Opção B</span><span class="recipe-title">Banana amassada com aveia e mel</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-lanche-banana-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>1 banana madura</li><li>Aveia sem glúten</li><li>1 fio de mel</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Amasse bem a banana com um garfo.</li><li>Misture a aveia sem glúten.</li><li>Finalize com um fio de mel.</li></ol></div></div></article><p class="subsection-title">Ceia anti-fome · 21h (30 min antes de dormir)</p><article class="recipe-card recipe-card--featured" id="rec-ceia-fixa" data-accent="snack"><button class="recipe-head" type="button" aria-expanded="false" aria-controls="rec-ceia-fixa-body"><span class="recipe-head-text"><span class="recipe-tag">Receita do dia · cardápio fixo</span><span class="recipe-title">Mingau Conforto Noturno</span></span><svg class="chevron" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="recipe-body" id="rec-ceia-fixa-body" hidden><div class="recipe-body-inner"><p class="sr-label">Ingredientes</p><ul class="ing-list"><li>200 ml de leite zero lactose (ou leite de amêndoas)</li><li>2 colheres de sopa cheias de farelo de aveia (certificado sem glúten)</li><li>1 colher de sobremesa de sementes de chia</li><li>1 fio de mel ou gotas de stevia</li></ul><p class="sr-label">Modo de preparo</p><ol class="steps-list"><li>Em uma panela pequena, misture o leite, a aveia e a chia.</li><li>Leve ao fogo baixo, mexendo sempre, até engrossar e virar um mingau cremoso.</li><li>Apague o fogo, adicione o mel ou stevia e coma morno.</li></ol><p class="recipe-note">A chia e a aveia soltam um gel que cria uma película protetora no estômago contra o ácido a noite inteira.</p></div></div></article></div>
+      </section>
+
+      <section class="view" id="view-chas">
+        <div class="view-header">
+          <span class="view-eyebrow">Chás terapêuticos</span>
+          <h1 class="view-title">Guia rápido de chás</h1>
+          <p class="view-desc">Preparo, benefício e o melhor horário para cada um.</p>
+        </div>
+        <div class="info-grid"><article class="info-card" id="cha-espinheira" data-accent="tea"><div class="info-card-head"><span class="info-card-title">Espinheira-Santa</span><span class="info-card-time">Em jejum e no final da tarde (17h30)</span></div><p class="info-card-line"><strong>Preparo:</strong> Abafe por 10 minutos em água fervente. Tome morno e sem adoçar — assim o efeito cicatrizante é maior.</p><p class="info-card-line"><strong>Benefício:</strong> Protege e ajuda a cicatrizar a mucosa gástrica.</p></article><article class="info-card" id="cha-ervadoce" data-accent="tea"><div class="info-card-head"><span class="info-card-title">Erva-doce (funcho)</span><span class="info-card-time">Meio da manhã (10h)</span></div><p class="info-card-line"><strong>Preparo:</strong> Infusão simples: água quente, abafada por alguns minutos e tomada morna.</p><p class="info-card-line"><strong>Benefício:</strong> Excelente contra espasmos intestinais, dores abdominais e eliminação de gases acumulados.</p></article><article class="info-card" id="cha-camomila" data-accent="tea"><div class="info-card-head"><span class="info-card-title">Camomila ou cidreira</span><span class="info-card-time">À tarde ou à noite</span></div><p class="info-card-line"><strong>Preparo:</strong> Infusão em água quente, tomada morna.</p><p class="info-card-line"><strong>Benefício:</strong> Ajudam a baixar os níveis de cortisol, aliviando a hipersensibilidade à dor da fibromialgia.</p></article><article class="info-card" id="cha-capimsanto" data-accent="tea"><div class="info-card-head"><span class="info-card-title">Capim-santo (capim-limão) ou cidreira</span><span class="info-card-time">Final da tarde ou antes de dormir</span></div><p class="info-card-line"><strong>Preparo:</strong> Infusão em água quente, tomada morna.</p><p class="info-card-line"><strong>Benefício:</strong> Acalmam o sistema nervoso central — essencial para TEA, TDAH e dores da fibromialgia — sem agredir o estômago.</p></article></div>
+      </section>
+
+      <section class="view" id="view-suplementos">
+        <div class="view-header">
+          <span class="view-eyebrow">Estratégia de farmácia</span>
+          <h1 class="view-title">Suplementos</h1>
+          <p class="view-desc">Consulte seu médico para organizar estes aliados na sua rotina.</p>
+        </div>
+        <div class="info-grid"><article class="info-card" id="sup-espinheira" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Espinheira-Santa</span><span class="info-card-time">Em jejum, ao acordar</span></div><p class="info-card-line"><strong>Forma:</strong> Extrato seco ou tintura</p><p class="info-card-line"><strong>Efeito:</strong> Protetor gástrico natural — ajuda a cicatrizar a mucosa e reduzir a queimação.</p></article><article class="info-card" id="sup-enzimas" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Enzimas digestivas</span><span class="info-card-time">No início do almoço e do jantar</span></div><p class="info-card-line"><strong>Forma:</strong> Cápsula com protease, amilase, lipase e lactase</p><p class="info-card-line"><strong>Efeito:</strong> Quebram os alimentos e ajudam a eliminar o estufamento e os gases.</p></article><article class="info-card" id="sup-glutamina" data-accent="supp"><div class="info-card-head"><span class="info-card-title">L-Glutamina</span><span class="info-card-time">Em jejum, junto com o chá de Espinheira-Santa</span></div><p class="info-card-line"><strong>Forma:</strong> 5 g diluída em água ou no chá</p><p class="info-card-line"><strong>Efeito:</strong> Aminoácido que repara as paredes do estômago e do intestino.</p></article><article class="info-card" id="sup-magnesio" data-accent="supp"><div class="info-card-head"><span class="info-card-title">Magnésio Inositol</span><span class="info-card-time">À noite, junto com a ceia</span></div><p class="info-card-line"><strong>Forma:</strong> Dose diluída em água</p><p class="info-card-line"><strong>Efeito:</strong> O magnésio relaxa as dores musculares da fibromialgia; o inositol acalma a mente hiperativa (TDAH/TEA) para um sono reparador.</p></article></div>
+      </section>
+
+      <section class="view" id="view-minha-rotina">
+        <div class="view-header">
+          <span class="view-eyebrow">Personalização</span>
+          <h1 class="view-title">Minha Rotina</h1>
+          <p class="view-desc">Cadastre medicações, suplementos, patologias e tratamentos para adaptar o Alívio Diário ao seu cuidado real.</p>
+        </div>
+        <div class="routine-manager" aria-label="Gerenciador da minha rotina">
+          <div class="routine-tabs" id="routine-tabs" role="tablist"></div>
+          <form id="routine-form" autocomplete="off"></form>
+        </div>
+        <div class="subsection-title" id="routine-list-title">Itens cadastrados</div>
+        <div class="routine-list" id="routine-list"></div>
+      </section>
+
+      <section class="view" id="view-regras">
+        <div class="view-header">
+          <span class="view-eyebrow">Diretrizes</span>
+          <h1 class="view-title">Regras de ouro</h1>
+          <p class="view-desc">As bases do plano para funcionar no menor tempo possível.</p>
+        </div>
+        <div class="rules-grid"><article class="rule-card"><h3>Zero glúten, lactose e enlatados</h3><p>Use apenas as substituições já validadas: macarrão de arroz no lugar do trigo, leite e creme de leite zero lactose.</p></article><article class="rule-card"><h3>Texturas confortáveis</h3><p>Alimentos cozidos, purês e cremes reduzem o esforço do estômago, diminuem a queimação e respeitam a seletividade sensorial.</p></article><article class="rule-card"><h3>Pausa nos fermentáveis</h3><p>Evite feijão, brócolis, repolho, couve-flor, alho e cebola em excesso nesta semana — eles aumentam os gases.</p></article><article class="rule-card"><h3>Posição anatômica para dormir</h3><p>Durma virada para o lado esquerdo, com a cabeceira levemente elevada. Isso impede mecanicamente a subida do ácido gástrico.</p></article></div><div class="alert-callout"><div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 L21 19 H3 Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9.5v4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.4" r="0.9" fill="currentColor"/></svg></div><div><h3>Alívio imediato</h3><p>Use o antiácido leitoso de farmácia apenas em crises agudas de queimação, para evitar efeito rebote ou intestino preso.</p></div></div>
+      </section>
+
+      <section class="view" id="view-guia">
+        <div class="view-header">
+          <span class="view-eyebrow">Contexto regional</span>
+          <h1 class="view-title">Guia nordestino e paraibano</h1>
+          <p class="view-desc">Ingredientes acessíveis e de baixo custo, encontrados nas feiras e mercados da região.</p>
+        </div>
+        <div class="region-section"><h3>Frutas seguras e acessíveis</h3><div class="info-grid"><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Mamão formosa ou papaia</span></div><p class="info-card-line">Fácil de encontrar nas feiras e mercados da Paraíba, com excelente preço. Contém papaína, enzima natural que ajuda a digerir proteínas e combate diretamente a azia.</p></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Melão (amarelo ou pele de sapo)</span></div><p class="info-card-line">Fruta do clima semiárido, barata na região. Alto teor de água e pH neutro/alcalino — acalma a queimação gástrica quase imediatamente.</p></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Banana prata ou da terra (sempre cozida)</span></div><p class="info-card-line">Excelente carboidrato protetor quando cozida. Evite comer crua à noite se tiver gases — prefira sempre cozida ou amassada morna.</p></article></div></div><div class="region-section"><h3>Evitar nesta fase</h3><div class="chip-row"><span class="avoid-chip">Seriguela</span><span class="avoid-chip">Umbu</span><span class="avoid-chip">Cajá</span><span class="avoid-chip">Maracujá</span><span class="avoid-chip">Caju</span></div></div><div class="region-section"><h3>Legumes de alto custo-benefício</h3><div class="info-grid"><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Chuchu e cenoura</span></div><p class="info-card-line">Base para quase todas as refeições do plano. Muito baratos em qualquer época do ano no estado e não fermentam no intestino.</p></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Jerimum (abóbora)</span></div><p class="info-card-line">Alimento culturalmente forte na Paraíba, muito barato e rico em vitamina A. Cicatrizante natural para as mucosas do trato digestivo.</p></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Macaxeira e inhame</span></div><p class="info-card-line">Substitutos perfeitos do pão de trigo. Sustentam e evitam a fome noturna, sem gerar os gases dos produtos panificados industriais.</p></article></div></div><div class="region-section"><h3>Ervas tradicionais para chás</h3><div class="info-grid"><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Espinheira-santa</span></div><p class="info-card-line">Encontrada em farmácias de manipulação ou lojas de produtos naturais em João Pessoa e Campina Grande, em folhas secas ou cápsulas. Deve ser sua prioridade máxima.</p><div class="chip-row"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Ver preparo do chá</button></div></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Erva-doce / funcho</span></div><p class="info-card-line">Planta medicinal de fácil acesso e muito barata — o melhor remédio caseiro para eliminar os gases que causam o estufamento doloroso.</p><div class="chip-row"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-ervadoce">Ver preparo do chá</button></div></article><article class="info-card" data-accent="region"><div class="info-card-head"><span class="info-card-title">Capim-santo (capim-limão) ou cidreira</span></div><p class="info-card-line">Muito comuns em quintais paraibanos. Excelentes no final da tarde ou antes de dormir: acalmam o sistema nervoso central, essencial para TEA, TDAH e dores da fibromialgia, sem agredir o estômago.</p><div class="chip-row"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-capimsanto">Ver preparo do chá</button></div></article></div></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<button class="fab" type="button">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8v5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="15.6" r="0.9" fill="#fff"/></svg>
+  Crise de azia agora?
+</button>
+
+<div class="modal-backdrop" id="fab-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <button class="modal-close" type="button" aria-label="Fechar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <h3 id="modal-title">Alívio imediato</h3>
+    <p>Use o antiácido leitoso de farmácia apenas em crises agudas de queimação, para evitar efeito rebote ou intestino preso.</p>
+    <div class="modal-chips"><button class="link-chip" type="button" data-accent="tea" data-view="chas" data-tab="" data-target="cha-espinheira">Chá de Espinheira-Santa</button><button class="link-chip" type="button" data-accent="primary" data-view="regras" data-tab="" data-target="">Ver todas as regras de ouro</button></div>
+  </div>
+</div>
+
+<script>window.ALIVIO_TIMELINE_KEYS = ["jejum", "cafe", "cha-manha", "enzimas-almoco", "almoco", "lanche", "cha-tarde", "enzimas-jantar", "jantar", "ceia", "dormir"];</script>
+<script>
+(function(){
+  'use strict';
+
+  function prefersReducedMotion(){
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /* ---------------- View / Tab switching ---------------- */
+  function setView(view){
+    document.querySelectorAll('.view').forEach(function(v){
+      v.classList.toggle('view--active', v.id === 'view-' + view);
+    });
+    document.querySelectorAll('.nav-item').forEach(function(n){
+      var active = n.dataset.target === view;
+      n.classList.toggle('nav-item--active', active);
+      if(active){ n.setAttribute('aria-current','page'); } else { n.removeAttribute('aria-current'); }
+    });
+    closeDrawer();
+  }
+
+  function setTab(tab){
+    document.querySelectorAll('#view-receitas .tab-panel').forEach(function(p){
+      p.classList.toggle('tab-panel--active', p.id === 'tab-' + tab);
+    });
+    document.querySelectorAll('#view-receitas .tab-btn').forEach(function(b){
+      var active = b.dataset.tab === tab;
+      b.classList.toggle('tab-btn--active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  }
+
+  function expandRecipe(card){
+    if(!card) return;
+    var body = card.querySelector('.recipe-body');
+    var head = card.querySelector('.recipe-head');
+    if(body && body.hasAttribute('hidden')){
+      body.removeAttribute('hidden');
+      if(head) head.setAttribute('aria-expanded','true');
+    }
+  }
+
+  function flash(el){
+    el.classList.remove('flash-highlight');
+    void el.offsetWidth;
+    el.classList.add('flash-highlight');
+  }
+
+  function goTo(view, tab, target){
+    setView(view);
+    if(tab) setTab(tab);
+    if(target){
+      requestAnimationFrame(function(){
+        var el = document.getElementById(target);
+        if(!el) return;
+        if(el.classList.contains('recipe-card')) expandRecipe(el);
+        el.scrollIntoView({behavior: prefersReducedMotion() ? 'auto' : 'smooth', block:'center'});
+        flash(el);
+      });
+    } else {
+      window.scrollTo({top:0, behavior:'auto'});
+    }
+  }
+  window.goTo = goTo;
+
+  /* ---------------- Mobile drawer ---------------- */
+  var sidebar = null, backdrop = null, lastFocused = null;
+
+  function openDrawer(){
+    sidebar = sidebar || document.querySelector('.sidebar');
+    backdrop = backdrop || document.querySelector('.backdrop');
+    if(!sidebar) return;
+    lastFocused = document.activeElement;
+    sidebar.classList.add('sidebar--open');
+    if(backdrop) backdrop.classList.add('backdrop--visible');
+    document.body.style.overflow = 'hidden';
+    var firstNav = sidebar.querySelector('.nav-item');
+    if(firstNav) firstNav.focus();
+  }
+
+  function closeDrawer(){
+    sidebar = sidebar || document.querySelector('.sidebar');
+    backdrop = backdrop || document.querySelector('.backdrop');
+    if(sidebar) sidebar.classList.remove('sidebar--open');
+    if(backdrop) backdrop.classList.remove('backdrop--visible');
+    document.body.style.overflow = '';
+  }
+
+  /* ---------------- Checklist + progress ---------------- */
+  var TIMELINE_KEYS = window.ALIVIO_TIMELINE_KEYS || [];
+  var BASE_TIMELINE_ITEMS = [];
+  var checklistEventsBound = false;
+
+  function todayKey(){
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return 'aliviodiario:checklist:' + y + '-' + m + '-' + day;
+  }
+
+  function loadChecklist(){
+    try{
+      var raw = localStorage.getItem(todayKey());
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+
+  function saveChecklist(state){
+    try{ localStorage.setItem(todayKey(), JSON.stringify(state)); }catch(e){}
+  }
+
+  function updateProgress(){
+    var state = loadChecklist();
+    var total = TIMELINE_KEYS.length;
+    var done = 0;
+    TIMELINE_KEYS.forEach(function(k){ if(state[k]) done++; });
+    var fill = document.getElementById('progress-fill');
+    var count = document.getElementById('progress-count');
+    if(fill) fill.style.width = (total ? (done/total*100) : 0) + '%';
+    if(count) count.textContent = done + ' de ' + total + ' concluídos';
+    document.querySelectorAll('.timeline-node').forEach(function(node){
+      var key = node.dataset.key;
+      if(!key) return;
+      node.classList.toggle('timeline-node--done', !!state[key]);
+    });
+  }
+
+  function initChecklist(){
+    var state = loadChecklist();
+    document.querySelectorAll('.timeline-check').forEach(function(box){
+      var key = box.dataset.key;
+      box.checked = !!state[key];
+    });
+    if(!checklistEventsBound){
+      document.addEventListener('change', function(e){
+        var box = e.target.closest && e.target.closest('.timeline-check');
+        if(!box) return;
+        var s = loadChecklist();
+        s[box.dataset.key] = box.checked;
+        saveChecklist(s);
+        updateProgress();
+      });
+      checklistEventsBound = true;
+    }
+    updateProgress();
+  }
+
+  /* ---------------- Minha Rotina CRUD ---------------- */
+  var MY_ROUTINE_KEY = 'aliviodiario:minhaRotina:v1';
+  var routineActiveType = 'medicacoes';
+
+  var ROUTINE_TYPES = {
+    medicacoes: {
+      label: 'Medicações',
+      singular: 'medicação',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['dosagem', 'horario', 'frequencia', 'ingestao', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'dosagem', label:'Dosagem', type:'text'},
+        {name:'horario', label:'Horário indicado pelo médico', type:'time'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'ingestao', label:'Como tomar', type:'select', options:[['jejum','Em jejum'],['com_alimento','Com alimento'],['indiferente','Indiferente']]},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    },
+    suplementos: {
+      label: 'Suplementos',
+      singular: 'suplemento',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['dosagem', 'horario', 'frequencia', 'objetivo', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'dosagem', label:'Dosagem', type:'text'},
+        {name:'horario', label:'Horário sugerido', type:'time'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'objetivo', label:'Objetivo', type:'text'},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    },
+    patologias: {
+      label: 'Patologias/condições',
+      singular: 'condição',
+      statusActive: 'ativa',
+      statusInactive: 'inativa',
+      details: ['sintomas', 'cuidados', 'restricoes', 'observacoesMedicas'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'sintomas', label:'Sintomas principais', type:'textarea'},
+        {name:'cuidados', label:'Cuidados importantes', type:'textarea'},
+        {name:'restricoes', label:'Restrições', type:'textarea'},
+        {name:'observacoesMedicas', label:'Observações médicas', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativa','Ativa'],['inativa','Inativa']]}
+      ]
+    },
+    tratamentos: {
+      label: 'Tratamentos',
+      singular: 'tratamento',
+      statusActive: 'ativo',
+      statusInactive: 'inativo',
+      details: ['tipo', 'frequencia', 'periodo', 'profissional', 'observacoes'],
+      fields: [
+        {name:'nome', label:'Nome', type:'text', required:true},
+        {name:'tipo', label:'Tipo', type:'text'},
+        {name:'frequencia', label:'Frequência', type:'text'},
+        {name:'periodo', label:'Horário ou período preferencial', type:'text'},
+        {name:'profissional', label:'Profissional responsável', type:'text'},
+        {name:'observacoes', label:'Observações', type:'textarea'},
+        {name:'status', label:'Status', type:'select', options:[['ativo','Ativo'],['inativo','Inativo']]}
+      ]
+    }
+  };
+
+  function emptyRoutineData(){
+    return {medicacoes:[], suplementos:[], patologias:[], tratamentos:[]};
+  }
+
+  function loadRoutineData(){
+    try{
+      return Object.assign(emptyRoutineData(), JSON.parse(localStorage.getItem(MY_ROUTINE_KEY)) || {});
+    }catch(e){
+      return emptyRoutineData();
+    }
+  }
+
+  function saveRoutineData(data){
+    try{ localStorage.setItem(MY_ROUTINE_KEY, JSON.stringify(Object.assign(emptyRoutineData(), data))); }catch(e){}
+  }
+
+  function escapeHtml(value){
+    return String(value || '').replace(/[&<>"']/g, function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch];
+    });
+  }
+
+  function getFieldConfig(config, name){
+    return config.fields.find(function(field){ return field.name === name; });
+  }
+
+  function optionText(field, value){
+    if(!field || !field.options) return value || '';
+    var found = field.options.find(function(opt){ return opt[0] === value; });
+    return found ? found[1] : value;
+  }
+
+  function captureBaseTimeline(){
+    var timeline = document.getElementById('daily-timeline');
+    if(!timeline || BASE_TIMELINE_ITEMS.length) return;
+    BASE_TIMELINE_ITEMS = Array.prototype.slice.call(timeline.querySelectorAll('.timeline-node')).map(function(node, index){
+      return {
+        key: node.dataset.key,
+        time: node.dataset.time || '',
+        sort: timeToMinutes(node.dataset.time || '23:59'),
+        index: index,
+        html: node.outerHTML
+      };
+    });
+  }
+
+  function firstTimeFromText(value){
+    var match = String(value || '').match(/([01]?\d|2[0-3])[:h]([0-5]\d)?/i);
+    if(!match) return '';
+    return String(match[1]).padStart(2, '0') + ':' + (match[2] || '00');
+  }
+
+  function routineStatusIsActive(type, item){
+    var config = ROUTINE_TYPES[type];
+    return item && item.status === config.statusActive;
+  }
+
+  function customTimelineKey(type, item){
+    return 'custom-' + type + '-' + item.id;
+  }
+
+  function buildTimelineNode(entry){
+    var timeLabel = entry.time || 'dia todo';
+    return '<li class="timeline-node" data-accent="' + entry.accent + '" ' + (entry.time ? 'data-time="' + entry.time + '" ' : '') + 'data-key="' + entry.key + '">' +
+      '<span class="timeline-time">' + escapeHtml(timeLabel) + '</span><span class="timeline-dot"></span><div class="timeline-card"><div class="timeline-head">' +
+      '<input type="checkbox" class="timeline-check" data-key="' + escapeHtml(entry.key) + '" id="check-' + escapeHtml(entry.key) + '" aria-label="Marcar ' + escapeHtml(entry.title) + ' como concluído">' +
+      '<span class="timeline-title">' + escapeHtml(entry.title) + '</span></div><p class="timeline-desc">' + escapeHtml(entry.desc) + '</p></div></li>';
+  }
+
+  function itemSummary(parts){
+    return parts.filter(Boolean).join(' · ');
+  }
+
+  function buildCustomTimelineItems(){
+    var data = loadRoutineData();
+    var entries = [];
+
+    (data.medicacoes || []).filter(function(item){ return routineStatusIsActive('medicacoes', item); }).forEach(function(item){
+      var time = item.horario || '';
+      entries.push({
+        key: customTimelineKey('medicacao', item),
+        time: time,
+        sort: time ? timeToMinutes(time) : 1440,
+        accent: 'med',
+        title: 'Medicação: ' + (item.nome || 'Sem nome'),
+        desc: itemSummary([
+          item.dosagem,
+          item.frequencia,
+          optionText(getFieldConfig(ROUTINE_TYPES.medicacoes, 'ingestao'), item.ingestao),
+          item.observacoes
+        ])
+      });
+    });
+
+    (data.suplementos || []).filter(function(item){ return routineStatusIsActive('suplementos', item); }).forEach(function(item){
+      var time = item.horario || '';
+      entries.push({
+        key: customTimelineKey('suplemento', item),
+        time: time,
+        sort: time ? timeToMinutes(time) : 1440,
+        accent: 'supp',
+        title: 'Suplemento: ' + (item.nome || 'Sem nome'),
+        desc: itemSummary([item.dosagem, item.frequencia, item.objetivo, item.observacoes])
+      });
+    });
+
+    (data.tratamentos || []).filter(function(item){ return routineStatusIsActive('tratamentos', item); }).forEach(function(item){
+      var time = firstTimeFromText(item.periodo);
+      entries.push({
+        key: customTimelineKey('tratamento', item),
+        time: time,
+        sort: time ? timeToMinutes(time) : 1445,
+        accent: 'treatment',
+        title: 'Tratamento: ' + (item.nome || 'Sem nome'),
+        desc: itemSummary([item.tipo, item.frequencia, item.periodo, item.profissional, item.observacoes])
+      });
+    });
+
+    (data.patologias || []).filter(function(item){ return routineStatusIsActive('patologias', item); }).forEach(function(item){
+      entries.push({
+        key: customTimelineKey('condicao', item),
+        time: '',
+        sort: 1450,
+        accent: 'condition',
+        title: 'Atenção: ' + (item.nome || 'Condição ativa'),
+        desc: itemSummary([item.sintomas, item.cuidados, item.restricoes, item.observacoesMedicas])
+      });
+    });
+
+    return entries.filter(function(entry){ return entry.desc || entry.title; });
+  }
+
+  function renderDailyRoutine(){
+    var timeline = document.getElementById('daily-timeline');
+    if(!timeline) return;
+    captureBaseTimeline();
+    var customItems = buildCustomTimelineItems();
+    var allItems = BASE_TIMELINE_ITEMS.concat(customItems.map(function(entry, index){
+      return {
+        key: entry.key,
+        time: entry.time,
+        sort: entry.sort,
+        index: BASE_TIMELINE_ITEMS.length + index,
+        html: buildTimelineNode(entry)
+      };
+    }));
+    allItems.sort(function(a, b){
+      if(a.sort !== b.sort) return a.sort - b.sort;
+      return a.index - b.index;
+    });
+    timeline.innerHTML = allItems.map(function(item){ return item.html; }).join('');
+    TIMELINE_KEYS = allItems.map(function(item){ return item.key; });
+    updateProgress();
+    updateCurrentNode();
+  }
+
+  function renderRoutineInput(field, value){
+    var safeValue = escapeHtml(value || '');
+    if(field.type === 'textarea'){
+      return '<textarea id="routine-' + field.name + '" name="' + field.name + '" rows="3" ' + (field.required ? 'required' : '') + '>' + safeValue + '</textarea>';
+    }
+    if(field.type === 'select'){
+      return '<select id="routine-' + field.name + '" name="' + field.name + '" ' + (field.required ? 'required' : '') + '>' +
+        (field.options || []).map(function(opt){
+          return '<option value="' + escapeHtml(opt[0]) + '" ' + (opt[0] === value ? 'selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+        }).join('') + '</select>';
+    }
+    return '<input id="routine-' + field.name + '" name="' + field.name + '" type="' + (field.type || 'text') + '" value="' + safeValue + '" ' + (field.required ? 'required' : '') + '>';
+  }
+
+  function renderRoutineTabs(){
+    var tabs = document.getElementById('routine-tabs');
+    if(!tabs) return;
+    tabs.innerHTML = Object.keys(ROUTINE_TYPES).map(function(type){
+      var config = ROUTINE_TYPES[type];
+      return '<button class="routine-tab ' + (type === routineActiveType ? 'routine-tab--active' : '') + '" type="button" role="tab" aria-selected="' + (type === routineActiveType ? 'true' : 'false') + '" data-routine-type="' + type + '">' + config.label + '</button>';
+    }).join('');
+  }
+
+  function renderRoutineForm(item){
+    var form = document.getElementById('routine-form');
+    if(!form) return;
+    var config = ROUTINE_TYPES[routineActiveType];
+    var editing = !!item;
+    form.dataset.editingId = editing ? item.id : '';
+    form.innerHTML =
+      '<div class="routine-form-head"><div><span class="view-eyebrow">' + (editing ? 'Editar cadastro' : 'Novo cadastro') + '</span><h2>' + (editing ? 'Atualizar ' : 'Adicionar ') + config.singular + '</h2></div></div>' +
+      '<div class="routine-form-grid">' +
+      config.fields.map(function(field){
+        return '<label class="routine-field ' + (field.type === 'textarea' ? 'routine-field--wide' : '') + '" for="routine-' + field.name + '"><span>' + field.label + (field.required ? ' *' : '') + '</span>' + renderRoutineInput(field, editing ? item[field.name] : '') + '</label>';
+      }).join('') +
+      '</div><div class="routine-actions"><button class="routine-btn routine-btn--primary" type="submit">' + (editing ? 'Salvar alterações' : 'Cadastrar') + '</button>' +
+      (editing ? '<button class="routine-btn routine-btn--secondary" type="button" data-cancel-routine-edit>Cancelar edição</button>' : '') +
+      '</div>';
+  }
+
+  function itemFromRoutineForm(form, config){
+    var id = form.dataset.editingId || String(Date.now());
+    var item = {id:id};
+    config.fields.forEach(function(field){
+      item[field.name] = form.elements[field.name] ? form.elements[field.name].value.trim() : '';
+    });
+    if(!item.status) item.status = config.statusActive;
+    return item;
+  }
+
+  function renderRoutineList(){
+    var list = document.getElementById('routine-list');
+    var title = document.getElementById('routine-list-title');
+    if(!list || !title) return;
+    var data = loadRoutineData();
+    var config = ROUTINE_TYPES[routineActiveType];
+    var items = data[routineActiveType] || [];
+    title.textContent = config.label + ' cadastrados';
+    if(!items.length){
+      list.innerHTML = '<div class="routine-empty">Nenhum cadastro ainda. Preencha o formulário acima para começar.</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(item){
+      var inactive = item.status === config.statusInactive;
+      var details = config.details.filter(function(name){ return item[name]; }).map(function(name){
+        var field = getFieldConfig(config, name);
+        return '<div><strong>' + escapeHtml(field ? field.label : name) + ':</strong> ' + escapeHtml(optionText(field, item[name])) + '</div>';
+      }).join('');
+      return '<article class="routine-card"><div class="routine-card-top"><div><h3 class="routine-card-title">' + escapeHtml(item.nome || 'Sem nome') + '</h3><span class="routine-status ' + (inactive ? 'routine-status--inactive' : 'routine-status--active') + '">' + escapeHtml(optionText(getFieldConfig(config, 'status'), item.status)) + '</span></div><div class="routine-card-actions"><button class="routine-icon-btn" type="button" data-routine-edit="' + escapeHtml(item.id) + '" aria-label="Editar">✎</button><button class="routine-icon-btn routine-icon-btn--danger" type="button" data-routine-delete="' + escapeHtml(item.id) + '" aria-label="Excluir">×</button></div></div>' + (details ? '<div class="routine-card-details">' + details + '</div>' : '') + '</article>';
+    }).join('');
+  }
+
+  function renderRoutineManager(item){
+    renderRoutineTabs();
+    renderRoutineForm(item || null);
+    renderRoutineList();
+  }
+
+  function initRoutineManager(){
+    var form = document.getElementById('routine-form');
+    var tabs = document.getElementById('routine-tabs');
+    var list = document.getElementById('routine-list');
+    if(!form || !tabs || !list) return;
+    renderRoutineManager();
+    tabs.addEventListener('click', function(e){
+      var tab = e.target.closest && e.target.closest('[data-routine-type]');
+      if(!tab) return;
+      routineActiveType = tab.dataset.routineType;
+      renderRoutineManager();
+    });
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var config = ROUTINE_TYPES[routineActiveType];
+      var data = loadRoutineData();
+      var items = data[routineActiveType] || [];
+      var item = itemFromRoutineForm(form, config);
+      var idx = items.findIndex(function(entry){ return entry.id === item.id; });
+      if(idx >= 0) items[idx] = item;
+      else items.unshift(item);
+      data[routineActiveType] = items;
+      saveRoutineData(data);
+      renderDailyRoutine();
+      initChecklist();
+      renderRoutineManager();
+    });
+    form.addEventListener('click', function(e){
+      if(e.target.closest && e.target.closest('[data-cancel-routine-edit]')) renderRoutineManager();
+    });
+    list.addEventListener('click', function(e){
+      var editBtn = e.target.closest && e.target.closest('[data-routine-edit]');
+      var deleteBtn = e.target.closest && e.target.closest('[data-routine-delete]');
+      var data = loadRoutineData();
+      var items = data[routineActiveType] || [];
+      if(editBtn){
+        var item = items.find(function(entry){ return entry.id === editBtn.dataset.routineEdit; });
+        if(item){
+          renderRoutineManager(item);
+          form.scrollIntoView({behavior: prefersReducedMotion() ? 'auto' : 'smooth', block:'start'});
+        }
+      }
+      if(deleteBtn){
+        if(!window.confirm('Excluir este cadastro?')) return;
+        data[routineActiveType] = items.filter(function(entry){ return entry.id !== deleteBtn.dataset.routineDelete; });
+        saveRoutineData(data);
+        renderDailyRoutine();
+        initChecklist();
+        renderRoutineManager();
+      }
+    });
+  }
+
+  /* ---------------- Current / next timeline highlight ---------------- */
+  function timeToMinutes(t){
+    var parts = t.split(':');
+    return parseInt(parts[0],10)*60 + parseInt(parts[1],10);
+  }
+
+  function updateCurrentNode(){
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('.timeline-node'));
+    if(!nodes.length) return;
+    var now = new Date();
+    var nowMin = now.getHours()*60 + now.getMinutes();
+    var currentIdx = -1;
+    nodes.forEach(function(node, i){
+      var t = node.dataset.time;
+      if(!t) return;
+      if(timeToMinutes(t) <= nowMin) currentIdx = i;
+    });
+    nodes.forEach(function(node, i){
+      node.classList.toggle('timeline-node--current', i === currentIdx);
+    });
+  }
+
+  /* ---------------- Greeting + date ---------------- */
+  function updateGreeting(){
+    var h = new Date().getHours();
+    var text = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+    var el = document.getElementById('greeting-text');
+    if(el) el.textContent = text;
+    var dateEl = document.getElementById('greeting-date');
+    if(dateEl){
+      try{
+        var d = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+        dateEl.textContent = d;
+      }catch(e){}
+    }
+  }
+
+  /* ---------------- FAB modal ---------------- */
+  function openModal(){
+    var m = document.getElementById('fab-modal');
+    if(!m) return;
+    m.classList.add('modal-backdrop--visible');
+    var closeBtn = m.querySelector('.modal-close');
+    if(closeBtn) closeBtn.focus();
+  }
+  function closeModal(){
+    var m = document.getElementById('fab-modal');
+    if(!m) return;
+    m.classList.remove('modal-backdrop--visible');
+  }
+
+  /* ---------------- Event delegation ---------------- */
+  document.addEventListener('click', function(e){
+    var navItem = e.target.closest && e.target.closest('.nav-item');
+    if(navItem){ setView(navItem.dataset.target); return; }
+
+    var tabBtn = e.target.closest && e.target.closest('.tab-btn');
+    if(tabBtn){ setTab(tabBtn.dataset.tab); return; }
+
+    var chip = e.target.closest && e.target.closest('.link-chip');
+    if(chip){
+      goTo(chip.dataset.view, chip.dataset.tab || null, chip.dataset.target || null);
+      return;
+    }
+
+    var head = e.target.closest && e.target.closest('.recipe-head');
+    if(head){
+      var card = head.closest('.recipe-card');
+      var body = card.querySelector('.recipe-body');
+      var expanded = head.getAttribute('aria-expanded') === 'true';
+      head.setAttribute('aria-expanded', String(!expanded));
+      if(expanded){ body.setAttribute('hidden',''); } else { body.removeAttribute('hidden'); }
+      return;
+    }
+
+    if(e.target.closest && e.target.closest('.hamburger')){ openDrawer(); return; }
+    if(e.target.closest && e.target.closest('.backdrop')){ closeDrawer(); return; }
+
+    if(e.target.closest && e.target.closest('.fab')){ openModal(); return; }
+    if(e.target.closest && (e.target.closest('.modal-close') || e.target.id === 'fab-modal')){
+      if(e.target.id === 'fab-modal' || e.target.closest('.modal-close')) closeModal();
+      return;
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      closeDrawer();
+      closeModal();
+    }
+  });
+
+  /* ---------------- Init ---------------- */
+  document.addEventListener('DOMContentLoaded', function(){
+    setView('hoje');
+    setTab('cafe');
+    updateGreeting();
+    renderDailyRoutine();
+    initChecklist();
+    initRoutineManager();
+    setInterval(updateCurrentNode, 60000);
+
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        navigator.serviceWorker.register('sw.js').catch(function(){});
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
